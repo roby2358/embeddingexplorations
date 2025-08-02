@@ -1,16 +1,6 @@
-Priority:   99
-Status: ToDo
-ID: p6-cs3w-sj
-Write src/evolvattion/SPEC.md with technical specifciations in MUST SHOULD format to specify programmatic API for vecx classes. Emphasize good OO design.
----
-Priority:   98
-Status: ToDo
-ID: p6-cs3w-sk
-Write src/evolvattion/SPEC.md with technical specifciations in MUST SHOULD format to specify the evolutionary algorithm behavior.
----
 Priority:   90
 Status: ToDo
-ID: p6-cs3w-sl
+ID: p6-cs3w-sm
 Create FastAPI server with endpoints for batch string processing and embedding generation. The server side endpoints should be stub implementations for now. Static assets should live in resorces/public as index.html, index.js, and index.css. Use jquery and dynamic HTML
 ---
 Priority:   80
@@ -67,6 +57,16 @@ Priority:   20
 Status: ToDo
 ID: 75-gwpd-dk
 Create integration tests for all API endpoints and evolutionary algorithm components
+---
+Priority:    0
+Status: Done
+ID: p6-cs3w-sl
+Write src/evolvattion/SPEC.md with technical specifciations in MUST SHOULD format to specify the evolutionary algorithm behavior.
+---
+Priority:    0
+Status: Done
+ID: p6-cs3w-sk
+Write src/evolvattion/SPEC.md with technical specifciations in MUST SHOULD format to specify programmatic API for vecx classes. Emphasize good OO design.
 ---
 Priority:    0
 Status: Done
