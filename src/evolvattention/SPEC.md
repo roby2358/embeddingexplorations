@@ -512,7 +512,7 @@ def analyze_components(text: str, target_barycenter: np.ndarray) -> List[Compone
 - **MUST** Support maximum generation limit
 - **MUST** Support fitness convergence threshold
 - **MUST** Support minimum fitness improvement
-- **SHOULD**: Support early convergence detection
+- **SHOULD** Support early convergence detection
 
 ### Configuration Parameters
 
@@ -539,8 +539,7 @@ def analyze_components(text: str, target_barycenter: np.ndarray) -> List[Compone
 **Scalability**:
 - MUST handle populations of 100+ individuals
 - MUST support 1000+ generations
-- MUST complete generation in < 10 seconds
-- SHOULD implement parallel fitness evaluation
+- SHOULD implement parallel crossover and fitness evaluation
 
 **Memory Management**:
 - MUST avoid memory leaks during evolution
@@ -560,12 +559,9 @@ def analyze_components(text: str, target_barycenter: np.ndarray) -> List[Compone
 - MUST handle VecBookIndex errors gracefully
 
 **Session Management**:
-- MUST maintain evolution session state
-- MUST provide session persistence
-- MUST support session resumption
+- MUST maintain evolution state
 
 **Progress Reporting**:
-- MUST provide real-time progress updates
 - MUST report generation statistics
 - MUST provide best individual information
 - SHOULD provide population diversity metrics

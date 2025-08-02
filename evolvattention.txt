@@ -5,12 +5,12 @@ Write src/evolvattion/SPEC.md with technical specifciations in MUST SHOULD forma
 ---
 Priority:   98
 Status: ToDo
-ID: p6-cs3w-sj
+ID: p6-cs3w-sk
 Write src/evolvattion/SPEC.md with technical specifciations in MUST SHOULD format to specify the evolutionary algorithm behavior.
 ---
 Priority:   90
 Status: ToDo
-ID: p6-cs3w-sj
+ID: p6-cs3w-sl
 Create FastAPI server with endpoints for batch string processing and embedding generation. The server side endpoints should be stub implementations for now. Static assets should live in resorces/public as index.html, index.js, and index.css. Use jquery and dynamic HTML
 ---
 Priority:   80
