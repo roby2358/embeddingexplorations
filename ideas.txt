@@ -1,0 +1,15 @@
+ID: g3-4vee-w9
+Score:   80
+Build a system with API and UI that processes multiple text strings, converts them to embeddings, and computes the cosine barycenter (average vector) of the resulting embedding vectors
+---
+ID: in-6xan-rv
+Score:   75
+Implement an evolutionary algorithm that iteratively processes batches of text strings, evaluates them using cosine similarity scoring, and evolves toward the optimal barycenter vector through selection and mutation
+---
+ID: uz-aq9y-5x
+Score:   70
+Develop an API and UI system that accepts multiple text strings, converts them to embeddings, and returns the cosine distances between all pairs of vectors in a structured order
+---
+ID: ai-df4n-un
+Score:   60
+Enhance the crossover function by integrating attention mechanisms to selectively preserve and propagate the most valuable components of each string during evolutionary iterations, improving convergence toward optimal solutions

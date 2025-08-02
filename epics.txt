@@ -1,0 +1,5 @@
+Score:   85
+Ideas: g3-4vee-w9 in-6xan-rv uz-aq9y-5x ai-df4n-un
+Projects: evolvattention
+ID: i2-4x24-uy
+Build an evolutionary attention system that processes text strings through embedding spaces, computes barycenters and cosine distances, and uses attention-enhanced crossover functions to evolve toward optimal solutions
