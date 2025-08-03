@@ -13,3 +13,7 @@ Develop an API and UI system that accepts multiple text strings, converts them t
 ID: ai-df4n-un
 Score:   60
 Enhance the crossover function by integrating attention mechanisms to selectively preserve and propagate the most valuable components of each string during evolutionary iterations, improving convergence toward optimal solutions
+---
+ID: dn-r7b2-2w
+Score:   50
+Add more embedding spaces to evolvabet

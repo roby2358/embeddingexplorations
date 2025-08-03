@@ -12,6 +12,9 @@ dependencies = [
     "uvicorn[standard]==0.24.0",
     "pydantic==2.5.0",
     "python-multipart==0.0.6",
+    "numpy>=1.21.0",
+    "faiss-cpu>=1.7.0",
+    "sentence-transformers>=2.2.0",
 ]
 
 [project.optional-dependencies]
@@ -49,9 +52,13 @@ warn_unused_configs = true
 disallow_untyped_defs = true
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "tests_slow"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-v --tb=short"
 pythonpath = ["src"]
+markers = [
+    "fast: marks tests as fast (no model loading)",
+    "slow: marks tests as slow (with model loading and embeddings)",
+]

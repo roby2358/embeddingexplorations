@@ -5,6 +5,10 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import List, Optional
 import pathlib, textwrap
+from pathlib import Path
+
+# Import VecBookIndex only when needed (not at module level)
+# from .vecx.vecbook_index import VecBookIndex
 
 # ensure static directory exists at import-time so Starlette StaticFiles doesn't raise
 _STATIC_ROOT = pathlib.Path("resources/public")
@@ -56,9 +60,26 @@ class AttentionAnalyzeRequest(BaseModel):
 class ServerState:  # noqa: D101 – simple state holder
     barycenter_vector: Optional[list] = None
     evolution_session: Optional[dict] = None
+    vecbook_index: Optional[object] = None  # Changed from VecBookIndex to object
 
 
 state = ServerState()
+
+# Initialize VecBookIndex instance
+def get_vecbook_index():
+    """Get or create VecBookIndex instance"""
+    if state.vecbook_index is None:
+        # Import VecBookIndex only when needed
+        from .vecx.vecbook_index import VecBookIndex
+        
+        # Create data directory if it doesn't exist
+        data_path = Path("data")
+        data_path.mkdir(exist_ok=True)
+        
+        # Initialize VecBookIndex
+        state.vecbook_index = VecBookIndex(data_path)
+    
+    return state.vecbook_index
 
 
 # ────────────────────────────────────────────────────────────────────────────────
@@ -80,7 +101,7 @@ app.add_middleware(
 
 # Mount static files at root, but with check_files=False to allow API routes to take precedence
 # ────────────────────────────────────────────────────────────────────────────────
-# Routes – stub implementations
+# Routes – Connected to VecBookIndex methods
 # ────────────────────────────────────────────────────────────────────────────────
 
 
@@ -103,61 +124,113 @@ async def serve_js() -> FileResponse:
 
 
 @app.post("/api/v1/barycenter")
-async def barycenter(_: BarycenterRequest):  # noqa: D401
-    state.barycenter_vector = [0.1, 0.2, 0.3]  # stub
-    return {"status": "success"}
+async def barycenter(req: BarycenterRequest):  # noqa: D401
+    """Calculate cosine barycenter of multiple strings and store in server memory"""
+    try:
+        vecbook = get_vecbook_index()
+        
+        # Use VecBookIndex to set target strings and calculate barycenter
+        result = vecbook.set_target_strings(req.strings)
+        
+        if result["status"] == "success":
+            # Store barycenter info in state for other endpoints
+            state.barycenter_vector = {
+                "target_strings": req.strings,
+                "target_count": result["target_count"],
+                "barycenter_dimension": result["barycenter_dimension"]
+            }
+            return {"status": "success"}
+        else:
+            raise HTTPException(status_code=400, detail=result["message"])
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error calculating barycenter: {str(e)}")
 
 
 @app.post("/api/v1/cosine-similarities")
 async def cosine(req: CosineSimilaritiesRequest):  # noqa: D401
+    """Calculate cosine similarities between input strings and stored barycenter"""
     if state.barycenter_vector is None:
-        raise HTTPException(status_code=400, detail="No barycenter")
-    sims = [0.8 for _ in req.strings]  # stub
-    return {"status": "success", "data": {"similarities": sims}}
+        raise HTTPException(status_code=400, detail="No barycenter set. Call /barycenter first.")
+    
+    try:
+        vecbook = get_vecbook_index()
+        
+        # Use VecBookIndex to compare strings against stored barycenter
+        results = vecbook.compare_against_barycenter(req.strings)
+        
+        if results:
+            # Extract similarities in the same order as input strings
+            similarities = [float(result["cosine_similarity"]) for result in results]
+            return {
+                "status": "success", 
+                "data": {"similarities": similarities}
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to calculate similarities")
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error calculating similarities: {str(e)}")
 
 
 @app.post("/api/v1/evolution/initialize")
 async def evolution_initialize(req: EvolutionInitRequest):  # noqa: D401
     """Initialize evolutionary algorithm with target strings."""
-    # Store target strings and parameters
-    state.evolution_session = {
-        "target_strings": req.target_strings,
-        "population_size": req.population_size,
-        "step_generations": req.step_generations,
-        "output_length": req.output_length,
-        "generation": 0,
-        "population": []
-    }
-    
-    # Generate initial population (stub implementation)
-    import random
-    import string
-    
-    population = []
-    for i in range(req.population_size):
-        # Generate random string based on target strings
-        base_string = random.choice(req.target_strings)
-        # Add some random variation
-        variation = ''.join(random.choices(string.ascii_letters + ' ', k=random.randint(5, 20)))
-        evolved_string = base_string + " " + variation
-        population.append({
-            "string": evolved_string,
-            "similarity": random.uniform(0.3, 0.9)  # Random similarity score
-        })
-    
-    # Sort by similarity (best first)
-    population.sort(key=lambda x: x["similarity"], reverse=True)
-    state.evolution_session["population"] = population
-    
-    return {
-        "status": "success",
-        "data": {
+    try:
+        vecbook = get_vecbook_index()
+        
+        # Set target strings using VecBookIndex
+        target_result = vecbook.set_target_strings(req.target_strings)
+        if target_result["status"] != "success":
+            raise HTTPException(status_code=400, detail=target_result["message"])
+        
+        # Store evolution session
+        state.evolution_session = {
+            "target_strings": req.target_strings,
             "population_size": req.population_size,
             "step_generations": req.step_generations,
             "output_length": req.output_length,
-            "population": population
+            "generation": 0,
+            "population": []
         }
-    }
+        
+        # Generate initial population using VecBookIndex
+        import random
+        import string
+        
+        population = []
+        for i in range(req.population_size):
+            # Generate random string based on target strings
+            base_string = random.choice(req.target_strings)
+            # Add some random variation
+            variation = ''.join(random.choices(string.ascii_letters + ' ', k=random.randint(5, 20)))
+            evolved_string = base_string + " " + variation
+            
+            # Calculate similarity using VecBookIndex
+            similarity_results = vecbook.compare_against_barycenter([evolved_string])
+            similarity = float(similarity_results[0]["cosine_similarity"]) if similarity_results else 0.0
+            
+            population.append({
+                "string": evolved_string,
+                "similarity": similarity
+            })
+        
+        # Sort by similarity (best first)
+        population.sort(key=lambda x: x["similarity"], reverse=True)
+        state.evolution_session["population"] = population
+        
+        return {
+            "status": "success",
+            "data": {
+                "population_size": req.population_size,
+                "step_generations": req.step_generations,
+                "output_length": req.output_length,
+                "population": population
+            }
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error initializing evolution: {str(e)}")
 
 
 @app.post("/api/v1/evolution/step")
@@ -166,43 +239,53 @@ async def evolution_step():  # noqa: D401
     if state.evolution_session is None:
         raise HTTPException(status_code=400, detail="No active evolution session")
     
-    # Simulate evolution (stub implementation)
-    import random
-    
-    current_gen = state.evolution_session["generation"]
-    step_gens = state.evolution_session["step_generations"]
-    
-    # Evolve population
-    population = state.evolution_session["population"]
-    for _ in range(step_gens):
-        # Simple evolution: randomly improve some individuals
-        for i in range(len(population)):
-            if random.random() < 0.3:  # 30% chance of improvement
-                population[i]["similarity"] = min(1.0, population[i]["similarity"] + random.uniform(0.01, 0.05))
-                # Add some variation to the string
-                population[i]["string"] += " " + ''.join(random.choices("abcdefghijklmnopqrstuvwxyz ", k=random.randint(1, 5)))
-    
-    # Sort by similarity (best first)
-    population.sort(key=lambda x: x["similarity"], reverse=True)
-    state.evolution_session["population"] = population
-    state.evolution_session["generation"] = current_gen + step_gens
-    
-    # Calculate statistics
-    similarities = [p["similarity"] for p in population]
-    best_fitness = max(similarities)
-    average_fitness = sum(similarities) / len(similarities)
-    median_fitness = sorted(similarities)[len(similarities) // 2]
-    
-    return {
-        "status": "success",
-        "data": {
-            "generation": state.evolution_session["generation"],
-            "best_fitness": best_fitness,
-            "average_fitness": average_fitness,
-            "median_fitness": median_fitness,
-            "population": population
+    try:
+        vecbook = get_vecbook_index()
+        
+        # Simulate evolution with VecBookIndex integration
+        import random
+        
+        current_gen = state.evolution_session["generation"]
+        step_gens = state.evolution_session["step_generations"]
+        
+        # Evolve population
+        population = state.evolution_session["population"]
+        for _ in range(step_gens):
+            # Simple evolution: randomly improve some individuals
+            for i in range(len(population)):
+                if random.random() < 0.3:  # 30% chance of improvement
+                    # Add some variation to the string
+                    population[i]["string"] += " " + ''.join(random.choices("abcdefghijklmnopqrstuvwxyz ", k=random.randint(1, 5)))
+                    
+                    # Recalculate similarity using VecBookIndex
+                    similarity_results = vecbook.compare_against_barycenter([population[i]["string"]])
+                    if similarity_results:
+                        population[i]["similarity"] = float(similarity_results[0]["cosine_similarity"])
+        
+        # Sort by similarity (best first)
+        population.sort(key=lambda x: x["similarity"], reverse=True)
+        state.evolution_session["population"] = population
+        state.evolution_session["generation"] = current_gen + step_gens
+        
+        # Calculate statistics
+        similarities = [p["similarity"] for p in population]
+        best_fitness = max(similarities)
+        average_fitness = sum(similarities) / len(similarities)
+        median_fitness = sorted(similarities)[len(similarities) // 2]
+        
+        return {
+            "status": "success",
+            "data": {
+                "generation": state.evolution_session["generation"],
+                "best_fitness": best_fitness,
+                "average_fitness": average_fitness,
+                "median_fitness": median_fitness,
+                "population": population
+            }
         }
-    }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error during evolution step: {str(e)}")
 
 
 @app.get("/api/v1/evolution/status")
@@ -211,57 +294,68 @@ async def evolution_status():  # noqa: D401
     if state.evolution_session is None:
         raise HTTPException(status_code=400, detail="No active evolution session")
     
-    population = state.evolution_session["population"]
-    similarities = [p["similarity"] for p in population]
-    best_fitness = max(similarities)
-    best_string = population[0]["string"]
-    
-    return {
-        "status": "success",
-        "data": {
-            "current_generation": state.evolution_session["generation"],
-            "best_fitness": best_fitness,
-            "convergence_rate": 0.05,  # Stub value
-            "best_string": best_string,
-            "is_complete": False
+    try:
+        population = state.evolution_session["population"]
+        similarities = [p["similarity"] for p in population]
+        best_fitness = max(similarities)
+        best_string = population[0]["string"]
+        
+        return {
+            "status": "success",
+            "data": {
+                "current_generation": state.evolution_session["generation"],
+                "best_fitness": best_fitness,
+                "convergence_rate": 0.05,  # Stub value for now
+                "best_string": best_string,
+                "is_complete": False
+            }
         }
-    }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting evolution status: {str(e)}")
 
 
 @app.post("/api/v1/attention/analyze")
 async def attention_analyze(req: AttentionAnalyzeRequest):  # noqa: D401
-    """Analyze string components using attention mechanism."""
+    """Analyze string components using attention mechanism against stored barycenter."""
     if state.barycenter_vector is None:
-        raise HTTPException(status_code=400, detail="No barycenter available")
+        raise HTTPException(status_code=400, detail="No barycenter available. Call /barycenter first.")
     
-    # Simple attention analysis (stub implementation)
-    import random
-    
-    # Split string into components (words)
-    components = req.string.split()
-    if not components:
-        components = [req.string]
-    
-    # Generate attention scores for each component
-    attention_components = []
-    for i, component in enumerate(components):
-        score = random.uniform(0.1, 0.9)  # Random attention score
-        attention_components.append({
-            "text": component,
-            "score": score,
-            "position": i
-        })
-    
-    # Calculate overall score
-    overall_score = sum(c["score"] for c in attention_components) / len(attention_components)
-    
-    return {
-        "status": "success",
-        "data": {
-            "components": attention_components,
-            "overall_score": overall_score
+    try:
+        vecbook = get_vecbook_index()
+        
+        # Simple attention analysis using VecBookIndex
+        # Split string into components (words)
+        components = req.string.split()
+        if not components:
+            components = [req.string]
+        
+        # Calculate attention scores for each component using VecBookIndex
+        attention_components = []
+        for i, component in enumerate(components):
+            # Compare component against barycenter
+            similarity_results = vecbook.compare_against_barycenter([component])
+            score = float(similarity_results[0]["cosine_similarity"]) if similarity_results else 0.0
+            
+            attention_components.append({
+                "text": component,
+                "score": score,
+                "position": i
+            })
+        
+        # Calculate overall score
+        overall_score = sum(c["score"] for c in attention_components) / len(attention_components)
+        
+        return {
+            "status": "success",
+            "data": {
+                "components": attention_components,
+                "overall_score": overall_score
+            }
         }
-    }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error analyzing attention: {str(e)}")
 
 
 @app.get("/health")
