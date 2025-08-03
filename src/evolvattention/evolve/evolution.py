@@ -295,8 +295,16 @@ class EvolutionaryAlgorithm:
             elite_count = min(self.elite_size, len(self.population.individuals))
             new_individuals.extend(self.population.individuals[:elite_count])
             
+            # Track existing strings to avoid duplicates
+            existing_strings = set(ind.text for ind in new_individuals)
+            
             # Generate offspring
-            while len(new_individuals) < self.population_size:
+            attempts = 0
+            max_attempts = self.population_size * 10  # Prevent infinite loops
+            
+            while len(new_individuals) < self.population_size and attempts < max_attempts:
+                attempts += 1
+                
                 if random.random() < self.crossover_rate:
                     # Crossover
                     parent1, parent2 = self._select_parents()
@@ -309,10 +317,29 @@ class EvolutionaryAlgorithm:
                 # Apply mutation
                 offspring = self._mutate(offspring)
                 
+                # Check if this string already exists
+                if offspring.text in existing_strings:
+                    # Skip this variant and try again with different parents
+                    continue
+                
                 # Evaluate fitness
                 offspring.fitness = self._evaluate_fitness(offspring)
                 
+                # Add to new population and track
                 new_individuals.append(offspring)
+                existing_strings.add(offspring.text)
+            
+            # If we couldn't generate enough unique individuals, fill with random variations
+            while len(new_individuals) < self.population_size:
+                # Generate a completely random string
+                random_text = self._generate_initial_variation("")
+                
+                # Ensure it's unique
+                if random_text not in existing_strings:
+                    random_individual = Individual(text=random_text)
+                    random_individual.fitness = self._evaluate_fitness(random_individual)
+                    new_individuals.append(random_individual)
+                    existing_strings.add(random_text)
             
             # Update population
             self.population.individuals = new_individuals[:self.population_size]
