@@ -62,7 +62,7 @@ class VecBookIndex:
         logger.info(f"Generating embeddings for {len(texts)} texts...")
         
         # Generate embeddings in batches for efficiency
-        embeddings = self.model.encode(texts, show_progress_bar=True, convert_to_numpy=True)
+        embeddings = self.model.encode(texts, show_progress_bar=False, convert_to_numpy=True)
         logger.info(f"Generated embeddings shape: {embeddings.shape}")
         
         return embeddings
@@ -169,7 +169,7 @@ class VecBookIndex:
         # Generate embedding for query
         try:
             self._initialize_model()
-            query_embedding = self.model.encode([query], convert_to_numpy=True)
+            query_embedding = self.model.encode([query], show_progress_bar=False, convert_to_numpy=True)
             
             # Normalize for cosine similarity if needed
             if self.similarity_metric == "cosine":
@@ -256,7 +256,7 @@ class VecBookIndex:
         
         try:
             self._initialize_model()
-            embeddings = self.model.encode(texts, convert_to_numpy=True)
+            embeddings = self.model.encode(texts, show_progress_bar=False, convert_to_numpy=True)
             
             # Convert numpy array to list of lists
             return embeddings.tolist()
@@ -283,7 +283,7 @@ class VecBookIndex:
             
             # Generate embeddings for all strings at once
             all_strings = target_strings + test_strings
-            embeddings = self.model.encode(all_strings, convert_to_numpy=True)
+            embeddings = self.model.encode(all_strings, show_progress_bar=False, convert_to_numpy=True)
             
             # Split embeddings into target and test
             target_embeddings = embeddings[:len(target_strings)]
@@ -347,7 +347,7 @@ class VecBookIndex:
             self.target_strings = target_strings.copy()
             
             # Generate embeddings for target strings
-            self.target_embeddings = self.model.encode(target_strings, convert_to_numpy=True)
+            self.target_embeddings = self.model.encode(target_strings, show_progress_bar=False, convert_to_numpy=True)
             
             # Normalize target embeddings
             faiss.normalize_L2(self.target_embeddings)
@@ -412,7 +412,7 @@ class VecBookIndex:
             self._initialize_model()
             
             # Generate embeddings for test strings
-            test_embeddings = self.model.encode(test_strings, convert_to_numpy=True)
+            test_embeddings = self.model.encode(test_strings, show_progress_bar=False, convert_to_numpy=True)
             
             # Normalize test embeddings
             faiss.normalize_L2(test_embeddings)
