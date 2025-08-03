@@ -10,6 +10,9 @@ from pathlib import Path
 # Import VecBookIndex only when needed (not at module level)
 # from .vecx.vecbook_index import VecBookIndex
 
+# Import EvolutionaryAlgorithm
+# from .evolution import EvolutionaryAlgorithm
+
 # ensure static directory exists at import-time so Starlette StaticFiles doesn't raise
 _STATIC_ROOT = pathlib.Path("resources/public")
 _STATIC_ROOT.mkdir(parents=True, exist_ok=True)
@@ -61,6 +64,7 @@ class ServerState:  # noqa: D101 – simple state holder
     barycenter_vector: Optional[list] = None
     evolution_session: Optional[dict] = None
     vecbook_index: Optional[object] = None  # Changed from VecBookIndex to object
+    evolutionary_algorithm: Optional[object] = None  # EvolutionaryAlgorithm instance
 
 
 state = ServerState()
@@ -80,6 +84,22 @@ def get_vecbook_index():
         state.vecbook_index = VecBookIndex(data_path)
     
     return state.vecbook_index
+
+
+# Initialize EvolutionaryAlgorithm instance
+def get_evolutionary_algorithm():
+    """Get or create EvolutionaryAlgorithm instance"""
+    if state.evolutionary_algorithm is None:
+        # Import EvolutionaryAlgorithm only when needed
+        from .evolution import EvolutionaryAlgorithm
+        
+        # Get VecBookIndex instance
+        vecbook_index = get_vecbook_index()
+        
+        # Initialize EvolutionaryAlgorithm
+        state.evolutionary_algorithm = EvolutionaryAlgorithm(vecbook_index)
+    
+    return state.evolutionary_algorithm
 
 
 # ────────────────────────────────────────────────────────────────────────────────
@@ -177,47 +197,28 @@ async def cosine(req: CosineSimilaritiesRequest):  # noqa: D401
 async def evolution_initialize(req: EvolutionInitRequest):  # noqa: D401
     """Initialize evolutionary algorithm with target strings."""
     try:
-        vecbook = get_vecbook_index()
+        # Get evolutionary algorithm instance
+        ea = get_evolutionary_algorithm()
         
-        # Set target strings using VecBookIndex
-        target_result = vecbook.set_target_strings(req.target_strings)
-        if target_result["status"] != "success":
-            raise HTTPException(status_code=400, detail=target_result["message"])
+        # Update population size from request
+        ea.update_population_size(req.population_size)
         
-        # Store evolution session
+        # Initialize population using evolutionary algorithm
+        init_result = ea.initialize_population(req.target_strings)
+        if init_result["status"] != "success":
+            raise HTTPException(status_code=400, detail=init_result["message"])
+        
+        # Store evolution session parameters
         state.evolution_session = {
             "target_strings": req.target_strings,
             "population_size": req.population_size,
             "step_generations": req.step_generations,
             "output_length": req.output_length,
-            "generation": 0,
-            "population": []
+            "generation": 0
         }
         
-        # Generate initial population using VecBookIndex
-        import random
-        import string
-        
-        population = []
-        for i in range(req.population_size):
-            # Generate random string based on target strings
-            base_string = random.choice(req.target_strings)
-            # Add some random variation
-            variation = ''.join(random.choices(string.ascii_letters + ' ', k=random.randint(5, 20)))
-            evolved_string = base_string + " " + variation
-            
-            # Calculate similarity using VecBookIndex
-            similarity_results = vecbook.compare_against_barycenter([evolved_string])
-            similarity = float(similarity_results[0]["cosine_similarity"]) if similarity_results else 0.0
-            
-            population.append({
-                "string": evolved_string,
-                "similarity": similarity
-            })
-        
-        # Sort by similarity (best first)
-        population.sort(key=lambda x: x["similarity"], reverse=True)
-        state.evolution_session["population"] = population
+        # Get population data for response
+        population_data = ea.get_population_data()
         
         return {
             "status": "success",
@@ -225,7 +226,7 @@ async def evolution_initialize(req: EvolutionInitRequest):  # noqa: D401
                 "population_size": req.population_size,
                 "step_generations": req.step_generations,
                 "output_length": req.output_length,
-                "population": population
+                "population": population_data
             }
         }
         
@@ -240,47 +241,35 @@ async def evolution_step():  # noqa: D401
         raise HTTPException(status_code=400, detail="No active evolution session")
     
     try:
-        vecbook = get_vecbook_index()
+        # Get evolutionary algorithm instance
+        ea = get_evolutionary_algorithm()
         
-        # Simulate evolution with VecBookIndex integration
-        import random
-        
-        current_gen = state.evolution_session["generation"]
+        # Run multiple generations
         step_gens = state.evolution_session["step_generations"]
         
-        # Evolve population
-        population = state.evolution_session["population"]
         for _ in range(step_gens):
-            # Simple evolution: randomly improve some individuals
-            for i in range(len(population)):
-                if random.random() < 0.3:  # 30% chance of improvement
-                    # Add some variation to the string
-                    population[i]["string"] += " " + ''.join(random.choices("abcdefghijklmnopqrstuvwxyz ", k=random.randint(1, 5)))
-                    
-                    # Recalculate similarity using VecBookIndex
-                    similarity_results = vecbook.compare_against_barycenter([population[i]["string"]])
-                    if similarity_results:
-                        population[i]["similarity"] = float(similarity_results[0]["cosine_similarity"])
+            # Evolve one generation
+            evolve_result = ea.evolve_generation()
+            if evolve_result["status"] != "success":
+                raise HTTPException(status_code=500, detail=evolve_result["message"])
         
-        # Sort by similarity (best first)
-        population.sort(key=lambda x: x["similarity"], reverse=True)
-        state.evolution_session["population"] = population
-        state.evolution_session["generation"] = current_gen + step_gens
+        # Update session generation count
+        state.evolution_session["generation"] = ea.generation
         
-        # Calculate statistics
-        similarities = [p["similarity"] for p in population]
-        best_fitness = max(similarities)
-        average_fitness = sum(similarities) / len(similarities)
-        median_fitness = sorted(similarities)[len(similarities) // 2]
+        # Get population data for response
+        population_data = ea.get_population_data()
+        
+        # Get current statistics
+        status_result = ea.get_status()
         
         return {
             "status": "success",
             "data": {
                 "generation": state.evolution_session["generation"],
-                "best_fitness": best_fitness,
-                "average_fitness": average_fitness,
-                "median_fitness": median_fitness,
-                "population": population
+                "best_fitness": status_result["best_fitness"],
+                "average_fitness": status_result["average_fitness"],
+                "median_fitness": status_result["average_fitness"],  # Use average as median for now
+                "population": population_data
             }
         }
         
@@ -295,19 +284,22 @@ async def evolution_status():  # noqa: D401
         raise HTTPException(status_code=400, detail="No active evolution session")
     
     try:
-        population = state.evolution_session["population"]
-        similarities = [p["similarity"] for p in population]
-        best_fitness = max(similarities)
-        best_string = population[0]["string"]
+        # Get evolutionary algorithm instance
+        ea = get_evolutionary_algorithm()
+        
+        # Get current status
+        status_result = ea.get_status()
+        if status_result["status"] != "success":
+            raise HTTPException(status_code=500, detail=status_result["message"])
         
         return {
             "status": "success",
             "data": {
-                "current_generation": state.evolution_session["generation"],
-                "best_fitness": best_fitness,
-                "convergence_rate": 0.05,  # Stub value for now
-                "best_string": best_string,
-                "is_complete": False
+                "current_generation": status_result["current_generation"],
+                "best_fitness": status_result["best_fitness"],
+                "convergence_rate": status_result["convergence_rate"],
+                "best_string": status_result["best_string"],
+                "is_complete": status_result["is_complete"]
             }
         }
         

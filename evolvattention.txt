@@ -1,47 +1,12 @@
-Priority:   80
-Status: ToDo
-ID: sg-5gzu-yg
-Implement cosine barycenter calculation endpoint that accepts multiple strings and returns the average vector
----
-Priority:   60
-Status: ToDo
-ID: 5s-kjt6-g8
-Design and implement evolutionary algorithm framework with population management and fitness evaluation
----
-Priority:   60
-Status: ToDo
-ID: iv-wqx4-gy
-Add evolutionary algorithm endpoint that runs generations and returns progress toward barycenter
----
-Priority:   60
-Status: ToDo
-ID: 7c-x7i8-ci
-Create endpoint for calculating cosine distances between all pairs of strings in a batch
----
-Priority:   60
+Priority:   50
 Status: ToDo
 ID: fa-hdcb-t5
 Implement attention mechanism for analyzing string components and identifying valuable segments
 ---
-Priority:   60
-Status: ToDo
-ID: na-v3ti-cf
-Create evolutionary algorithm population management - The SPEC defines this but no implementation exists
----
-Priority:   60
-Status: ToDo
-ID: ug-tq7q-xh
-Implement fitness evaluation using cosine similarity and add mutation and crossover operators - Core genetic algorithm components for the evolutionary algorithm
----
-Priority:   55
+Priority:   50
 Status: ToDo
 ID: yd-q73q-xq
 Create attention-enhanced crossover function that preserves valuable string components during evolution
----
-Priority:   55
-Status: ToDo
-ID: ri-5hk2-3w
-Implement mutation operators for evolutionary algorithm with string-based genetic operations
 ---
 Priority:   30
 Status: ToDo
@@ -62,6 +27,36 @@ Priority:   20
 Status: ToDo
 ID: 75-gwpd-dk
 Create integration tests for all API endpoints and evolutionary algorithm components
+---
+Priority:    0
+Status: Done
+ID: iv-wqx4-gy
+Add evolutionary algorithm endpoint that runs generations and returns progress toward barycenter
+---
+Priority:    0
+Status: Done
+ID: ri-5hk2-3w
+Implement mutation operators for evolutionary algorithm with string-based genetic operations
+---
+Priority:    0
+Status: Done
+ID: ug-tq7q-xh
+Implement fitness evaluation using cosine similarity and add mutation and crossover operators - Core genetic algorithm components for the evolutionary algorithm
+---
+Priority:    0
+Status: Done
+ID: 5s-kjt6-g8
+Design and implement evolutionary algorithm framework with population management and fitness evaluation
+---
+Priority:    0
+Status: Done
+ID: na-v3ti-cf
+Create evolutionary algorithm population management - The SPEC defines this but no implementation exists
+---
+Priority:    0
+Status: Done
+ID: sg-5gzu-yg
+Implement cosine barycenter calculation endpoint that accepts multiple strings and returns the average vector
 ---
 Priority:    0
 Status: Done
