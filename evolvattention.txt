@@ -1,7 +1,10 @@
 Priority:   50
 Status: ToDo
 ID: fa-hdcb-t5
-Implement attention mechanism for analyzing string components and identifying valuable segments
+Implement attention mechanism for analyzing string components and identifying valuable segments.
+Enhance the attention mechanism to analyze string components more intelligently
+Implement sliding window attention for character-level analysis
+Add attention score calculation that considers context and position
 ---
 Priority:   50
 Status: ToDo
@@ -12,6 +15,9 @@ Priority:   30
 Status: ToDo
 ID: wz-upvj-fr
 Write comprehensive documentation for API endpoints and evolutionary algorithm usage
+Add detailed docstrings to all API endpoints
+Create OpenAPI/Swagger documentation
+Add usage examples and parameter descriptions
 ---
 Priority:   30
 Status: ToDo
