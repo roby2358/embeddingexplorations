@@ -21,19 +21,24 @@ class Individual:
     attention_scores: List[float] = field(default_factory=list)
     
     def __post_init__(self):
-        if self.embedding is None:
-            self.embedding = np.array([])
+        # Keep embedding as None if not provided - will be computed when needed
+        pass
 
 @dataclass
 class Population:
     """Represents a population of individuals"""
     individuals: List[Individual]
-    target_barycenter: np.ndarray
+    target_barycenter: Optional[np.ndarray]
     generation: int = 0
     best_fitness: float = 0.0
     average_fitness: float = 0.0
     
     def __post_init__(self):
+        # Validate target_barycenter
+        if self.target_barycenter is not None:
+            if hasattr(self.target_barycenter, 'size') and self.target_barycenter.size == 0:
+                raise ValueError("target_barycenter cannot be an empty array")
+        
         if self.individuals:
             self._update_statistics()
     
@@ -126,6 +131,20 @@ class EvolutionaryAlgorithm:
                 individual.fitness = fitness_result
                 
                 individuals.append(individual)
+            
+            # Ensure target_barycenter is properly set
+            if self.vecbook_index.target_barycenter is None:
+                return {
+                    "status": "error",
+                    "message": "Target barycenter not properly set"
+                }
+            
+            # Check if target_barycenter is empty
+            if hasattr(self.vecbook_index.target_barycenter, 'size') and self.vecbook_index.target_barycenter.size == 0:
+                return {
+                    "status": "error",
+                    "message": "Target barycenter is empty"
+                }
             
             # Create population
             self.population = Population(

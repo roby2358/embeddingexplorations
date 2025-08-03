@@ -349,11 +349,25 @@ class VecBookIndex:
             # Generate embeddings for target strings
             self.target_embeddings = self.model.encode(target_strings, show_progress_bar=False, convert_to_numpy=True)
             
+            # Check if embeddings were generated successfully
+            if self.target_embeddings.size == 0:
+                return {
+                    "status": "error",
+                    "message": "Failed to generate embeddings for target strings"
+                }
+            
             # Normalize target embeddings
             faiss.normalize_L2(self.target_embeddings)
             
             # Calculate barycenter (mean of normalized target embeddings)
             self.target_barycenter = np.mean(self.target_embeddings, axis=0)
+            
+            # Check if barycenter calculation was successful
+            if self.target_barycenter.size == 0:
+                return {
+                    "status": "error",
+                    "message": "Failed to calculate barycenter"
+                }
             
             # Normalize the barycenter
             barycenter_norm = np.linalg.norm(self.target_barycenter)
@@ -408,11 +422,21 @@ class VecBookIndex:
             logger.error("No target barycenter available. Set target strings first.")
             return []
         
+        # Check if target_barycenter is empty
+        if hasattr(self.target_barycenter, 'size') and self.target_barycenter.size == 0:
+            logger.error("Target barycenter is empty. Set target strings first.")
+            return []
+        
         try:
             self._initialize_model()
             
             # Generate embeddings for test strings
             test_embeddings = self.model.encode(test_strings, show_progress_bar=False, convert_to_numpy=True)
+            
+            # Check if test embeddings were generated successfully
+            if test_embeddings.size == 0:
+                logger.error("Failed to generate embeddings for test strings")
+                return []
             
             # Normalize test embeddings
             faiss.normalize_L2(test_embeddings)

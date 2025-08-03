@@ -81,6 +81,17 @@ class TestFastEndpoints:
         assert response.status_code == 400
         data = response.json()
         assert "No barycenter available" in data["detail"]
+    
+    def test_evolution_step_error_handling(self):
+        """Test error handling for evolution step without initialization"""
+        # Ensure evolution session is not set
+        state.evolution_session = None
+        
+        response = client.post("/api/v1/evolution/step")
+        
+        assert response.status_code == 400
+        data = response.json()
+        assert "No active evolution session" in data["detail"]
 
 
 if __name__ == "__main__":

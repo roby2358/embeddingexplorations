@@ -27,7 +27,7 @@ class TestIndividual:
         assert individual.text == text
         assert individual.fitness == 0.0
         assert len(individual.attention_scores) == 0
-        assert individual.embedding is not None
+        assert individual.embedding is None  # Embedding is None by default until computed
     
     def test_individual_with_embedding(self):
         """Test creating an individual with embedding"""
