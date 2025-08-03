@@ -148,19 +148,20 @@ class TestEvolutionaryAlgorithm:
         ea = EvolutionaryAlgorithm(mock_vecbook_index, population_size=10)
         
         target_strings = ["test1", "test2"]
-        result = ea.initialize_population(target_strings)
+        result = ea.initialize_population(target_strings, output_length=50)
         
         assert result["status"] == "success"
         assert result["population_size"] == 10
         assert ea.population is not None
         assert len(ea.population.individuals) == 10
         assert ea.generation == 0
+        assert ea.output_length == 50
     
     def test_initialize_population_empty_targets(self, mock_vecbook_index):
         """Test population initialization with empty target strings"""
         ea = EvolutionaryAlgorithm(mock_vecbook_index)
         
-        result = ea.initialize_population([])
+        result = ea.initialize_population([], output_length=100)
         
         assert result["status"] == "error"
         assert "empty" in result["message"].lower()
@@ -174,7 +175,7 @@ class TestEvolutionaryAlgorithm:
         
         ea = EvolutionaryAlgorithm(mock_vecbook_index)
         
-        result = ea.initialize_population(["test1", "test2"])
+        result = ea.initialize_population(["test1", "test2"], output_length=100)
         
         assert result["status"] == "error"
         assert "VecBookIndex error" in result["message"]
@@ -194,7 +195,7 @@ class TestEvolutionaryAlgorithm:
         ea = EvolutionaryAlgorithm(mock_vecbook_index, population_size=10)
         
         # Initialize population first
-        ea.initialize_population(["test1", "test2"])
+        ea.initialize_population(["test1", "test2"], output_length=100)
         
         parent1, parent2 = ea._select_parents()
         
@@ -240,7 +241,7 @@ class TestEvolutionaryAlgorithm:
         ea = EvolutionaryAlgorithm(mock_vecbook_index, population_size=10)
         
         # Initialize population first
-        ea.initialize_population(["test1", "test2"])
+        ea.initialize_population(["test1", "test2"], output_length=100)
         
         result = ea.evolve_generation()
         
@@ -263,7 +264,7 @@ class TestEvolutionaryAlgorithm:
         ea = EvolutionaryAlgorithm(mock_vecbook_index, population_size=10)
         
         # Initialize population first
-        ea.initialize_population(["test1", "test2"])
+        ea.initialize_population(["test1", "test2"], output_length=100)
         
         result = ea.get_status()
         
@@ -287,7 +288,7 @@ class TestEvolutionaryAlgorithm:
         ea = EvolutionaryAlgorithm(mock_vecbook_index, population_size=5)
         
         # Initialize population first
-        ea.initialize_population(["test1", "test2"])
+        ea.initialize_population(["test1", "test2"], output_length=100)
         
         result = ea.get_population_data()
         
@@ -296,4 +297,19 @@ class TestEvolutionaryAlgorithm:
             assert "string" in item
             assert "similarity" in item
             assert isinstance(item["string"], str)
-            assert isinstance(item["similarity"], float) 
+            assert isinstance(item["similarity"], float)
+    
+    def test_generate_initial_variation(self, mock_vecbook_index):
+        """Test initial variation generation"""
+        ea = EvolutionaryAlgorithm(mock_vecbook_index)
+        ea.output_length = 25  # Set output length
+        
+        # Generate a variation
+        variation = ea._generate_initial_variation()
+        
+        # Check that the string has the correct length
+        assert len(variation) == 25
+        
+        # Check that it only contains visible ASCII characters
+        visible_ascii = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+        assert all(char in visible_ascii for char in variation) 

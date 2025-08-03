@@ -204,7 +204,7 @@ async def evolution_initialize(req: EvolutionInitRequest):  # noqa: D401
         ea.update_population_size(req.population_size)
         
         # Initialize population using evolutionary algorithm
-        init_result = ea.initialize_population(req.target_strings)
+        init_result = ea.initialize_population(req.target_strings, req.output_length)
         if init_result["status"] != "success":
             raise HTTPException(status_code=400, detail=init_result["message"])
         

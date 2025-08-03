@@ -80,12 +80,13 @@ class EvolutionaryAlgorithm:
         self.population_size = new_population_size
         logger.info(f"Population size updated to {new_population_size}")
     
-    def initialize_population(self, target_strings: List[str]) -> Dict[str, Any]:
+    def initialize_population(self, target_strings: List[str], output_length: int = 100) -> Dict[str, Any]:
         """
         Initialize evolutionary algorithm with target strings.
         
         Args:
             target_strings: List of strings to use as targets for evolution
+            output_length: Length of strings to generate
         
         Returns:
             Dict with status and population information
@@ -97,6 +98,9 @@ class EvolutionaryAlgorithm:
             }
         
         try:
+            # Store output_length for use in string generation
+            self.output_length = output_length
+            
             # Set target strings and calculate barycenter using VecBookIndex
             target_result = self.vecbook_index.set_target_strings(target_strings)
             if target_result["status"] != "success":
@@ -111,9 +115,8 @@ class EvolutionaryAlgorithm:
             individuals = []
             
             for i in range(self.population_size):
-                # Generate individual from target strings with random variations
-                base_string = random.choice(target_strings)
-                individual_text = self._generate_initial_variation(base_string)
+                # Generate individual with random strings from visible ASCII
+                individual_text = self._generate_initial_variation("")
                 
                 # Create individual
                 individual = Individual(text=individual_text)
@@ -157,17 +160,13 @@ class EvolutionaryAlgorithm:
                 "message": f"Failed to initialize population: {str(e)}"
             }
     
-    def _generate_initial_variation(self, base_string: str) -> str:
-        """Generate initial variation of a base string"""
-        # Simple variation: add random characters or modify existing ones
-        variations = [
-            base_string + " " + ''.join(random.choices("abcdefghijklmnopqrstuvwxyz ", k=random.randint(1, 10))),
-            base_string + " " + ''.join(random.choices("ABCDEFGHIJKLMNOPQRSTUVWXYZ ", k=random.randint(1, 10))),
-            base_string + " " + ''.join(random.choices("0123456789 ", k=random.randint(1, 5))),
-            base_string + " " + ''.join(random.choices(".,!?;: ", k=random.randint(1, 3))),
-        ]
-        
-        return random.choice(variations)
+    def _generate_initial_variation(self, base_string: str = "") -> str:
+        """Generate random string from visible ASCII characters"""
+        # Generate random string from visible ASCII characters
+        visible_ascii = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+        # Use output_length from the evolution session
+        length = getattr(self, 'output_length', 100)  # Default to 100 if not set
+        return ''.join(random.choices(visible_ascii, k=length))
     
     def _evaluate_fitness(self, individual: Individual) -> float:
         """Evaluate fitness of an individual using cosine similarity to target barycenter"""
