@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EvolvAttention</title>
+    <link rel="stylesheet" href="/index.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>EvolvAttention</h1>
+            <p>Interactive interface for evolutionary attention analysis</p>
+        </header>
+
+        <main>
+            <!-- Barycenter Section -->
+            <section class="card" id="barycenter-section">
+                <h2>Barycenter Calculation</h2>
+                <div class="form-group">
+                    <label for="barycenter-strings">Input Strings (one per line):</label>
+                    <textarea id="barycenter-strings" rows="4" placeholder="Enter strings here..."></textarea>
+                </div>
+                <button id="calculate-barycenter" class="btn btn-primary">Calculate Barycenter</button>
+                <div id="barycenter-status" class="status"></div>
+            </section>
+
+            <!-- Cosine Similarities Section -->
+            <section class="card" id="cosine-section">
+                <h2>Cosine Similarities</h2>
+                <div class="form-group">
+                    <label for="cosine-strings">Test Strings (one per line):</label>
+                    <textarea id="cosine-strings" rows="4" placeholder="Enter strings to compare..."></textarea>
+                </div>
+                <button id="calculate-cosine" class="btn btn-primary">Calculate Similarities</button>
+                <div id="cosine-results" class="results"></div>
+            </section>
+
+            <!-- Evolution Section -->
+            <section class="card" id="evolution-section">
+                <h2>Evolutionary Algorithm</h2>
+                
+                <div class="evolution-controls">
+                    <div class="form-group">
+                        <label for="target-strings">Target Strings (one per line):</label>
+                        <textarea id="target-strings" rows="3" placeholder="Enter target strings..."></textarea>
+                    </div>
+                    
+                    <div class="evolution-params">
+                        <div class="form-group">
+                            <label for="population-size">Population Size:</label>
+                            <input type="number" id="population-size" value="50" min="10" max="200">
+                        </div>
+                        <div class="form-group">
+                            <label for="step-generations">Generations per Step:</label>
+                            <input type="number" id="step-generations" value="10" min="1" max="50">
+                        </div>
+                        <div class="form-group">
+                            <label for="output-length">Output Length:</label>
+                            <input type="number" id="output-length" value="100" min="10" max="500">
+                        </div>
+                    </div>
+                    
+                    <button id="initialize-evolution" class="btn btn-primary">Initialize Evolution</button>
+                    <button id="step-evolution" class="btn btn-secondary" disabled>Step Evolution</button>
+                    <button id="reset-evolution" class="btn btn-danger" disabled>Reset</button>
+                </div>
+
+                <div id="evolution-status" class="status"></div>
+                <div id="evolution-results" class="results"></div>
+            </section>
+
+            <!-- Attention Analysis Section -->
+            <section class="card" id="attention-section">
+                <h2>Attention Analysis</h2>
+                <div class="form-group">
+                    <label for="attention-string">String to Analyze:</label>
+                    <textarea id="attention-string" rows="3" placeholder="Enter string for attention analysis..."></textarea>
+                </div>
+                <button id="analyze-attention" class="btn btn-primary">Analyze Attention</button>
+                <div id="attention-results" class="results"></div>
+            </section>
+
+            <!-- Visualization Section -->
+            <section class="card" id="visualization-section">
+                <h2>Visualization</h2>
+                <div class="visualization-controls">
+                    <button id="show-similarity-chart" class="btn btn-secondary">Show Similarity Chart</button>
+                    <button id="show-evolution-progress" class="btn btn-secondary">Show Evolution Progress</button>
+                    <button id="show-attention-heatmap" class="btn btn-secondary">Show Attention Heatmap</button>
+                </div>
+                <div id="visualization-area" class="visualization-area"></div>
+            </section>
+        </main>
+
+        <footer>
+            <p>EvolvAttention API - Interactive Interface</p>
+        </footer>
+    </div>
+
+    <script src="/index.js"></script>
+</body>
+</html>

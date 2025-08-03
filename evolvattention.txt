@@ -1,17 +1,7 @@
-Priority:   90
-Status: ToDo
-ID: p6-cs3w-sm
-Create FastAPI server with endpoints for batch string processing and embedding generation. The server side endpoints should be stub implementations for now. Static assets should live in resorces/public as index.html, index.js, and index.css. Use jquery and dynamic HTML
----
 Priority:   80
 Status: ToDo
 ID: sg-5gzu-yg
 Implement cosine barycenter calculation endpoint that accepts multiple strings and returns the average vector
----
-Priority:   80
-Status: ToDo
-ID: ev-wvsv-wh
-Build simple web UI for batch string input and visualization of embedding results
 ---
 Priority:   80
 Status: ToDo
@@ -57,6 +47,21 @@ Priority:   20
 Status: ToDo
 ID: 75-gwpd-dk
 Create integration tests for all API endpoints and evolutionary algorithm components
+---
+Priority:    0
+Status: Done
+ID: ev-wvsv-wh
+Build simple web UI for batch string input and visualization of embedding results
+---
+Priority:    0
+Status: Done
+ID: p6-cs3w-sm
+Create FastAPI server with endpoints for batch string processing and embedding generation. The server side endpoints should be stub implementations for now. Static assets should live in resorces/public as index.html, index.js, and index.css. Use jquery and dynamic HTML
+---
+Priority:    0
+Status: Done
+ID: jr-v94h-rg
+Create a comprehensive web interface with HTML, CSS, and JavaScript to interact with the evolvattention server API, including forms for text input, visualization components for attention patterns, and responsive design for optimal user experience
 ---
 Priority:    0
 Status: Done

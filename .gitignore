@@ -3,3 +3,8 @@ embeddingexplorations.iml
 /.venv/
 /bak/
 
+# Python cache directories
+__pycache__/
+*.py[cod]
+*$py.class
+
