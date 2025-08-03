@@ -12,7 +12,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
-from evolvattention.evolution import Individual, Population, EvolutionaryAlgorithm
+from evolvattention.evolve import Individual, Population, EvolutionaryAlgorithm
 from evolvattention.vecx.vecbook_index import VecBookIndex
 
 

@@ -11,7 +11,7 @@ from pathlib import Path
 # from .vecx.vecbook_index import VecBookIndex
 
 # Import EvolutionaryAlgorithm
-# from .evolution import EvolutionaryAlgorithm
+# from .evolve import EvolutionaryAlgorithm
 
 # ensure static directory exists at import-time so Starlette StaticFiles doesn't raise
 _STATIC_ROOT = pathlib.Path("resources/public")
@@ -91,7 +91,7 @@ def get_evolutionary_algorithm():
     """Get or create EvolutionaryAlgorithm instance"""
     if state.evolutionary_algorithm is None:
         # Import EvolutionaryAlgorithm only when needed
-        from .evolution import EvolutionaryAlgorithm
+        from .evolve import EvolutionaryAlgorithm
         
         # Get VecBookIndex instance
         vecbook_index = get_vecbook_index()
