@@ -6,8 +6,9 @@ A comprehensive system for evolutionary attention analysis using embedding-based
 
 EvolvAttention is designed to analyze and evolve text strings using attention mechanisms and evolutionary algorithms. The system consists of multiple components:
 
-- **FastAPI Server** (`server/`) - HTTP API for batch string processing and evolution
-- **Vector Processing** (`vecx/`) - Embedding and vector operations
+- **FastAPI Server** (`server.py`) - HTTP API for batch string processing and evolution
+- **Evolutionary Algorithm** (`evolve/`) - Population management and genetic operations
+- **Vector Processing** (`vecx/`) - Embedding and vector operations using sentence-transformers
 - **Text Records** (`textrec/`) - Text processing and record management
 
 ## Quick Start
@@ -30,18 +31,18 @@ uv sync --extra dev
 uv run python -m src.evolvattention.server
 
 # Option 2: Run with uvicorn directly
-uv run uvicorn src.evolvattention.server.app.server:app --host 0.0.0.0 --port 8000
+uv run uvicorn src.evolvattention.server:app --host 0.0.0.0 --port 8042
 
 # Option 3: Run from server directory
-cd src/evolvattention/server
-uv run python -m server
+cd src/evolvattention
+uv run python server.py
 ```
 
-The server will start on `http://localhost:8000`
+The server will start on `http://localhost:8042`
 
 ## System Architecture
 
-### FastAPI Server (`server/`)
+### FastAPI Server (`server.py`)
 
 The main HTTP API providing endpoints for:
 
@@ -70,22 +71,42 @@ The main HTTP API providing endpoints for:
 - `GET /` - Serve the main HTML page
 - `GET /health` - Health check endpoint
 
+### Evolutionary Algorithm (`evolve/`)
+
+Core evolutionary algorithm implementation with:
+
+- **Population Management**: Individual and Population classes with fitness tracking
+- **Genetic Operations**: Crossover and mutation operators
+- **Fitness Evaluation**: Cosine similarity to target barycenter
+- **Selection**: Tournament selection and elitism
+- **Generation Evolution**: Multi-generation evolution with statistics
+
+**Key Features**:
+- Population size: 50 (configurable)
+- Elite size: 5 (best individuals preserved)
+- Tournament size: 3 (selection pressure)
+- Crossover rate: 0.8
+- Mutation rate: 0.1
+- Character-level mutations (substitution, insertion, deletion)
+
 ### Vector Processing (`vecx/`)
 
 Core vector operations and embedding functionality:
 
-- Embedding generation and storage
-- Cosine similarity calculations
-- Vector normalization and barycenter computation
-- Evolutionary algorithm vector operations
+- **Sentence Transformers**: Uses `all-MiniLM-L6-v2` model for embeddings
+- **FAISS Integration**: Vector similarity search and indexing
+- **Barycenter Calculation**: Cosine barycenter computation with normalization
+- **Similarity Metrics**: Cosine similarity calculations
+- **Target Management**: Store and compare against target strings
 
 ### Text Records (`textrec/`)
 
 Text processing and record management:
 
-- Text record structures and validation
-- String preprocessing and tokenization
-- Record persistence and retrieval
+- **File Discovery**: Recursive .txt file discovery
+- **Record Parsing**: Parse files with `---` separators
+- **Metadata Tracking**: File paths, byte offsets, record indices
+- **Error Handling**: Robust file parsing with logging
 
 ## Development
 
@@ -95,17 +116,13 @@ Text processing and record management:
 src/evolvattention/
 ├── README.md              # This file
 ├── SPEC.md               # Technical specifications
-├── server/               # FastAPI server module
+├── server.py             # FastAPI server implementation
+├── evolve/               # Evolutionary algorithm module
 │   ├── __init__.py       # Module initialization
-│   ├── __main__.py       # Entry point
-│   ├── pyproject.toml    # Project configuration
-│   ├── app/              # Application package
-│   │   ├── __init__.py   # App package init
-│   │   └── server.py     # Main server code
-│   └── tests/            # Test suite
+│   └── evolution.py      # Core evolutionary algorithm
 ├── vecx/                 # Vector processing module
 │   ├── __init__.py
-│   ├── vecbook_index.py  # Vector indexing
+│   ├── vecbook_index.py  # Vector indexing and embedding
 │   └── README.md         # Vector module docs
 └── textrec/              # Text records module
     ├── __init__.py
@@ -131,16 +148,43 @@ uv run pytest
 
 ## Current Implementation Status
 
-This is a **stub implementation** with the following characteristics:
+### ✅ **Fully Implemented**
 
-- ✅ All API endpoints implemented according to SPEC.md
-- ✅ Proper error handling and validation
-- ✅ CORS middleware configured
-- ✅ Static file serving
-- ✅ In-memory state management for single-user deployment
-- ✅ Modern Python packaging with uv and pyproject.toml
-- ✅ Comprehensive test suite
-- 🔄 **Stub implementations** - Real embedding generation and evolutionary algorithms need to be implemented
+- **FastAPI Server**: Complete HTTP API with all endpoints
+- **Error Handling**: Comprehensive error handling and validation
+- **CORS Middleware**: Configured for web UI integration
+- **Static File Serving**: HTML/CSS/JS file serving
+- **State Management**: In-memory state for single-user deployment
+- **Modern Python Packaging**: uv and pyproject.toml configuration
+- **Test Suite**: Comprehensive test coverage
+- **Vector Processing**: Real embedding generation using sentence-transformers
+- **FAISS Integration**: Vector similarity search and indexing
+- **Barycenter Calculation**: Cosine barycenter with proper normalization
+- **Evolutionary Algorithm**: Complete genetic algorithm implementation
+- **Population Management**: Individual and Population classes
+- **Genetic Operations**: Crossover and mutation operators
+- **Fitness Evaluation**: Cosine similarity to target barycenter
+- **Text Records**: File discovery and record parsing
+
+### 🔄 **Partially Implemented**
+
+- **Attention Mechanism**: Basic implementation using component similarity
+  - Currently splits strings into words and compares each against barycenter
+  - Needs enhancement with proper attention scoring algorithms
+  - Task: `fa-hdcb-t5` - Implement attention mechanism for analyzing string components
+
+### ❌ **Not Yet Implemented**
+
+- **Attention-Enhanced Crossover**: Basic crossover exists, needs attention integration
+  - Task: `yd-q73q-xq` - Create attention-enhanced crossover function
+- **Comprehensive Logging**: Basic logging exists, needs system-wide implementation
+  - Task: `8f-uaf5-wn` - Implement proper logging throughout the system
+- **Unit Tests**: Core functionality needs testing
+  - Task: `65-wva7-we` - Add unit tests for VecBookIndex methods
+- **Integration Tests**: API endpoint testing needed
+  - Task: `75-gwpd-dk` - Create integration tests for all API endpoints
+- **Documentation**: API documentation needed
+  - Task: `wz-upvj-fr` - Write comprehensive documentation
 
 ## Testing
 
@@ -148,30 +192,65 @@ You can test the API using curl or any HTTP client:
 
 ```bash
 # Test barycenter calculation
-curl -X POST "http://localhost:8000/api/v1/barycenter" \
+curl -X POST "http://localhost:8042/api/v1/barycenter" \
   -H "Content-Type: application/json" \
   -d '{"strings": ["hello world", "goodbye world", "test string"]}'
 
 # Test evolution initialization
-curl -X POST "http://localhost:8000/api/v1/evolution/initialize" \
+curl -X POST "http://localhost:8042/api/v1/evolution/initialize" \
   -H "Content-Type: application/json" \
   -d '{"target_strings": ["target1", "target2"], "population_size": 10}'
 
 # Test attention analysis
-curl -X POST "http://localhost:8000/api/v1/attention/analyze" \
+curl -X POST "http://localhost:8042/api/v1/attention/analyze" \
   -H "Content-Type: application/json" \
   -d '{"string": "test string to analyze"}'
 ```
 
+## Key Features
+
+### Real Embedding Generation
+- Uses `sentence-transformers/all-MiniLM-L6-v2` model
+- Generates 384-dimensional embeddings
+- Proper normalization for cosine similarity
+
+### Working Evolutionary Algorithm
+- Population initialization with random strings
+- Tournament selection with elitism
+- Character-level crossover and mutation
+- Fitness evaluation using cosine similarity
+- Multi-generation evolution with statistics
+
+### Vector Operations
+- FAISS integration for efficient similarity search
+- Cosine barycenter calculation with normalization
+- Target string management and comparison
+- Embedding generation and storage
+
+### Text Processing
+- Recursive file discovery for .txt files
+- Record parsing with `---` separators
+- Metadata tracking and error handling
+- Robust file handling with logging
+
 ## Next Steps
 
-1. **Implement real embedding generation** using a language model (e.g., sentence-transformers)
-2. **Implement actual evolutionary algorithm** with crossover and mutation operators
-3. **Implement attention mechanism** for string component analysis
-4. **Add proper vector storage** and similarity calculations
-5. **Integrate vecx and textrec modules** with the server
-6. **Add comprehensive testing** for all components
-7. **Implement web UI** for visualization and interaction
+### High Priority Tasks
+1. **Implement attention-enhanced crossover** (`yd-q73q-xq`)
+2. **Enhance attention mechanism** (`fa-hdcb-t5`)
+3. **Add comprehensive unit tests** (`65-wva7-we`)
+
+### Medium Priority Tasks
+1. **Implement proper logging** (`8f-uaf5-wn`)
+2. **Write API documentation** (`wz-upvj-fr`)
+3. **Create integration tests** (`75-gwpd-dk`)
+
+### Future Enhancements
+1. **Web UI Development**: Interactive visualization
+2. **Multiple Embedding Models**: Support for different models
+3. **Advanced Attention Mechanisms**: Transformer-based attention
+4. **Performance Optimization**: Batch processing and caching
+5. **Persistence**: Database storage for sessions and results
 
 ## Contributing
 
@@ -179,6 +258,7 @@ curl -X POST "http://localhost:8000/api/v1/attention/analyze" \
 2. Add tests for new functionality
 3. Use the development tools (black, isort, mypy) to maintain code quality
 4. Update documentation as needed
+5. Check the task list for current priorities
 
 ## License
 
