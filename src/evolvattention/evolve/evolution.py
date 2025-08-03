@@ -10,6 +10,11 @@ from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass, field
 from pathlib import Path
 
+# Alphabet constants for random string generation
+VISIBLE_ASCII_ALPHABET = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+MUTATION_ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .,!?;:"
+POPULATION_ALPHABET = " abcdefghijklmnopqrstuvwxyz"
+
 logger = logging.getLogger(__name__)
 
 @dataclass
@@ -181,11 +186,9 @@ class EvolutionaryAlgorithm:
     
     def _generate_initial_variation(self, base_string: str = "") -> str:
         """Generate random string from visible ASCII characters"""
-        # Generate random string from visible ASCII characters
-        visible_ascii = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
         # Use output_length from the evolution session
         length = getattr(self, 'output_length', 100)  # Default to 100 if not set
-        return ''.join(random.choices(visible_ascii, k=length))
+        return ''.join(random.choices(POPULATION_ALPHABET, k=length))
     
     def _evaluate_fitness(self, individual: Individual) -> float:
         """Evaluate fitness of an individual using cosine similarity to target barycenter"""
@@ -209,14 +212,20 @@ class EvolutionaryAlgorithm:
         tournament1 = random.sample(self.population.individuals, self.tournament_size)
         parent1 = max(tournament1, key=lambda x: x.fitness)
         
-        # Select second parent (different from first)
-        remaining = [ind for ind in self.population.individuals if ind != parent1]
-        if len(remaining) >= self.tournament_size:
-            tournament2 = random.sample(remaining, self.tournament_size)
+        # 25% chance that second parent is a random string
+        if random.random() < 0.25:
+            # Generate a random string as second parent
+            random_text = self._generate_initial_variation("")
+            parent2 = Individual(text=random_text)
         else:
-            tournament2 = remaining
-        
-        parent2 = max(tournament2, key=lambda x: x.fitness) if tournament2 else parent1
+            # Select second parent using tournament selection (different from first)
+            remaining = [ind for ind in self.population.individuals if ind != parent1]
+            if len(remaining) >= self.tournament_size:
+                tournament2 = random.sample(remaining, self.tournament_size)
+            else:
+                tournament2 = remaining
+            
+            parent2 = max(tournament2, key=lambda x: x.fitness) if tournament2 else parent1
         
         return parent1, parent2
     
@@ -256,14 +265,14 @@ class EvolutionaryAlgorithm:
             # Random character substitution
             if text:
                 pos = random.randint(0, len(text) - 1)
-                new_char = random.choice("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .,!?;:")
+                new_char = random.choice(POPULATION_ALPHABET)
                 text = text[:pos] + new_char + text[pos+1:]
         
         if random.random() < self.mutation_rate:
             # Random character insertion
             if text:
                 pos = random.randint(0, len(text))
-                new_char = random.choice("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .,!?;:")
+                new_char = random.choice(POPULATION_ALPHABET)
                 text = text[:pos] + new_char + text[pos:]
         
         if random.random() < self.mutation_rate:
