@@ -50,11 +50,26 @@ class VecBookIndex:
         }
     
     def _initialize_model(self):
-        """Initialize the sentence transformer model"""
-        if self.model is None:
-            logger.info(f"Loading embedding model: {self.embedding_model}")
+        """Initialize the sentence transformer model.
+
+        Prefer the local HuggingFace cache: a normal load reaches out to the Hub
+        on every process start to check for updates (looks like it re-downloads
+        each run), so try ``local_files_only`` first and only hit the network on
+        a genuine cache miss (i.e. the very first run).
+        """
+        if self.model is not None:
+            return
+
+        logger.info(f"Loading embedding model: {self.embedding_model}")
+        try:
+            self.model = SentenceTransformer(
+                self.embedding_model, local_files_only=True
+            )
+            logger.info("Model loaded from local cache (no network)")
+        except Exception:
+            logger.info("Model not cached; downloading once from the Hub...")
             self.model = SentenceTransformer(self.embedding_model)
-            logger.info("Model loaded successfully")
+            logger.info("Model downloaded and loaded successfully")
     
     def _create_embeddings(self, texts: List[str]) -> np.ndarray:
         """Generate embeddings for a list of texts"""
