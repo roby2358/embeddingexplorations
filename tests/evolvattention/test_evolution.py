@@ -334,7 +334,7 @@ class TestCharGenome:
 
         mock = Mock(spec=VecBookIndex)
         mock.compare_against_barycenter.return_value = [{"cosine_similarity": "0.5"}]
-        return EvolutionaryAlgorithm(mock)
+        return EvolutionaryAlgorithm(mock, genome_mode="char")
 
     def test_individual_derives_char_genome_from_text(self):
         """An Individual built from text alone gets a per-character genome."""
@@ -354,44 +354,43 @@ class TestCharGenome:
 
 
 @pytest.fixture
-def token_ea():
-    """EvolutionaryAlgorithm in token mode, or skip if tiktoken/vocab unavailable."""
+def word_ea():
+    """EvolutionaryAlgorithm in word mode (the default; Scrabble dictionary)."""
     from evolvattention.evolve import EvolutionaryAlgorithm
 
-    pytest.importorskip("tiktoken")
     mock = Mock(spec=VecBookIndex)
     mock.compare_against_barycenter.return_value = [{"cosine_similarity": "0.5"}]
-    try:
-        ea = EvolutionaryAlgorithm(mock, genome_mode="token")
-    except Exception as exc:  # e.g. no network to fetch BPE ranks
-        pytest.skip(f"token codec unavailable: {exc}")
-    return ea
+    return EvolutionaryAlgorithm(mock, genome_mode="word")
 
 
-class TestTokenGenome:
-    """Token-mode genome: genes are GPT/BPE token ids, text is decoded."""
+class TestWordGenome:
+    """Word-mode genome: genes are Scrabble words, text is space-joined."""
 
-    def test_codec_is_token(self, token_ea):
-        assert token_ea.codec.name == "token"
-        assert len(token_ea.codec.vocab) > 0
+    def test_codec_is_word(self, word_ea):
+        assert word_ea.codec.name == "word"
+        assert len(word_ea.codec.vocab) > 0
+        assert all(w.isalpha() and w.islower() for w in word_ea.codec.vocab[:50])
 
-    def test_random_genome_is_int_ids_decoding_to_str(self, token_ea):
-        token_ea.output_length = 10
-        ind = token_ea._random_individual()
-        assert ind.genome and all(isinstance(g, int) for g in ind.genome)
-        assert isinstance(ind.text, str)
+    def test_random_genome_is_words_joined_by_spaces(self, word_ea):
+        word_ea.output_length = 10
+        ind = word_ea._random_individual()
+        assert ind.genome and all(isinstance(g, str) and g for g in ind.genome)
+        assert ind.text == " ".join(ind.genome)
+        assert all(w in word_ea.codec.vocab for w in ind.genome)
 
-    def test_crossover_and_mutate_keep_token_genome(self, token_ea):
-        token_ea.output_length = 8
-        p1 = token_ea._random_individual()
-        p2 = token_ea._random_individual()
-        child = token_ea._crossover(p1, p2)
-        assert all(isinstance(g, int) for g in child.genome)
-        assert child.text == token_ea.codec.to_text(child.genome)
-        mutated = token_ea._mutate(p1)
-        assert all(isinstance(g, int) for g in mutated.genome)
+    def test_crossover_and_mutate_keep_word_genome(self, word_ea):
+        word_ea.output_length = 8
+        p1 = word_ea._random_individual()
+        p2 = word_ea._random_individual()
+        child = word_ea._crossover(p1, p2)
+        assert all(isinstance(g, str) for g in child.genome)
+        assert child.text == word_ea.codec.to_text(child.genome)
+        mutated = word_ea._mutate(p1)
+        assert all(isinstance(g, str) for g in mutated.genome)
 
-    def test_set_genome_mode_switches_codec(self, token_ea):
-        token_ea.set_genome_mode("char")
-        assert token_ea.codec.name == "char"
-        assert token_ea._random_individual().genome  # char units
+    def test_set_genome_mode_switches_codec(self, word_ea):
+        word_ea.set_genome_mode("char")
+        assert word_ea.codec.name == "char"
+        assert word_ea._random_individual().genome  # char units
+        word_ea.set_genome_mode("word")
+        assert word_ea.codec.name == "word"

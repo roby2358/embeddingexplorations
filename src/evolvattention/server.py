@@ -51,8 +51,7 @@ class EvolutionInitRequest(BaseModel):
     population_size: int = 50
     step_generations: int = 10
     output_length: int = 100
-    genome_mode: str = "token"  # "token" (GPT/BPE tokens, default) or "char" (per-character)
-    token_encoding: str = "cl100k_base"  # tiktoken encoding when genome_mode="token"
+    genome_mode: str = "word"  # "word" (Scrabble words, default) or "char" (per-character)
 
 
 class AttentionAnalyzeRequest(BaseModel):
@@ -211,18 +210,18 @@ async def evolution_initialize(req: EvolutionInitRequest):  # noqa: D401
         # Update population size from request
         ea.update_population_size(req.population_size)
 
-        # Select genome representation (GPT tokens by default; char still supported)
-        mode = (req.genome_mode or "token").lower()
-        if mode not in ("char", "token"):
+        # Select genome representation (Scrabble words by default; char still supported)
+        mode = (req.genome_mode or "word").lower()
+        if mode not in ("char", "word"):
             raise HTTPException(
-                status_code=400, detail="genome_mode must be 'char' or 'token'"
+                status_code=400, detail="genome_mode must be 'char' or 'word'"
             )
         try:
-            ea.set_genome_mode(mode, req.token_encoding)
+            ea.set_genome_mode(mode)
         except Exception as e:
             raise HTTPException(
                 status_code=400,
-                detail=f"Could not initialize '{mode}' genome ({req.token_encoding}): {e}",
+                detail=f"Could not initialize '{mode}' genome: {e}",
             )
 
         # Initialize population using evolutionary algorithm

@@ -19,8 +19,10 @@ POPULATION_ALPHABET = " abcdefghijklmnopqrstuvwxyz"
 
 logger = logging.getLogger(__name__)
 
-# Module-level cache so the curated token vocab is built only once per encoding.
-_TOKEN_VOCAB_CACHE: Dict[str, List[int]] = {}
+# Bundled Scrabble word list (one lowercase word per line), shipped next to this
+# module. Loaded once and shared across all WordCodec instances.
+WORDS_PATH = Path(__file__).with_name("words.txt")
+_WORD_LIST_CACHE: Optional[List[str]] = None
 
 
 class CharCodec:
@@ -45,61 +47,40 @@ class CharCodec:
         return "".join(genome)
 
 
-class TokenCodec:
-    """Genome = list of GPT (BPE) token ids; text = tokenizer.decode(genome).
+class WordCodec:
+    """Genome = list of Scrabble words; text = those words joined by spaces.
 
-    The alphabet of evolution is a curated subset of the tokenizer vocabulary:
-    tokens that decode to printable ASCII containing at least one letter. This
-    keeps every gene a real word-piece, so the evolved output reads as scrambled
-    real words instead of character soup.
+    The alphabet of evolution is the bundled Scrabble dictionary (~179k words),
+    so every gene is a real word and the evolved output reads as word salad
+    rather than character soup. `output_length` counts words.
     """
 
-    name = "token"
+    name = "word"
 
-    def __init__(self, encoding_name: str = "cl100k_base"):
-        import tiktoken  # imported lazily so char mode pulls in no extra deps
+    def __init__(self, words_path: Path = WORDS_PATH):
+        self.words_path = words_path
+        self.vocab = self._load_vocab()
 
-        self.encoding_name = encoding_name
-        self.enc = tiktoken.get_encoding(encoding_name)
-        self.vocab = self._curated_vocab()
+    def _load_vocab(self) -> List[str]:
+        global _WORD_LIST_CACHE
+        if _WORD_LIST_CACHE is not None:
+            return _WORD_LIST_CACHE
+        with open(self.words_path, "r", encoding="utf-8") as fh:
+            words = [w.strip() for w in fh if w.strip()]
+        if not words:
+            raise RuntimeError(f"Scrabble word list at {self.words_path} is empty")
+        _WORD_LIST_CACHE = words
+        logger.info(f"Word codec: loaded {len(words)} words from {self.words_path}")
+        return words
 
-    def _curated_vocab(self) -> List[int]:
-        if self.encoding_name in _TOKEN_VOCAB_CACHE:
-            return _TOKEN_VOCAB_CACHE[self.encoding_name]
-        good: List[int] = []
-        for tok in range(self.enc.n_vocab):
-            try:
-                raw = self.enc.decode_single_token_bytes(tok)
-            except Exception:
-                continue  # special tokens have no standalone byte form
-            try:
-                s = raw.decode("utf-8")
-            except UnicodeDecodeError:
-                continue  # partial multi-byte piece, skip
-            if (
-                s
-                and all(32 <= ord(c) <= 126 for c in s)
-                and any(c.isalpha() for c in s)
-            ):
-                good.append(tok)
-        if not good:
-            raise RuntimeError(
-                f"No usable tokens found in encoding '{self.encoding_name}'"
-            )
-        _TOKEN_VOCAB_CACHE[self.encoding_name] = good
-        logger.info(
-            f"Token codec '{self.encoding_name}': curated vocab of {len(good)} tokens"
-        )
-        return good
-
-    def random_unit(self) -> int:
+    def random_unit(self) -> str:
         return random.choice(self.vocab)
 
-    def random_genome(self, length: int) -> List[int]:
+    def random_genome(self, length: int) -> List[str]:
         return [self.random_unit() for _ in range(max(0, length))]
 
-    def to_text(self, genome: List[int]) -> str:
-        return self.enc.decode(genome)
+    def to_text(self, genome: List[str]) -> str:
+        return " ".join(genome)
 
 
 @dataclass
@@ -110,11 +91,11 @@ class Individual:
     embedding: Optional[np.ndarray] = None
     fitness: float = 0.0
     attention_scores: List[float] = field(default_factory=list)
-    genome: list = field(default_factory=list)  # units: chars or token ids
+    genome: list = field(default_factory=list)  # units: chars or words
 
     def __post_init__(self) -> None:
         # When constructed directly from text (char mode / tests), the genome
-        # is just the character sequence. Token-mode individuals are always
+        # is just the character sequence. Word-mode individuals are always
         # built with an explicit genome via EvolutionaryAlgorithm._new_individual.
         if not self.genome:
             self.genome = list(self.text)
@@ -170,8 +151,7 @@ class EvolutionaryAlgorithm:
         tournament_size: int = 3,
         crossover_rate: float = 0.8,
         mutation_rate: float = 0.1,
-        genome_mode: str = "char",
-        token_encoding: str = "cl100k_base",
+        genome_mode: str = "word",
     ):
         self.vecbook_index = vecbook_index
         self.population_size = population_size
@@ -180,8 +160,7 @@ class EvolutionaryAlgorithm:
         self.crossover_rate = crossover_rate
         self.mutation_rate = mutation_rate
 
-        # Genome representation: "char" (per-character) or "token" (GPT/BPE tokens)
-        self.token_encoding = token_encoding
+        # Genome representation: "word" (Scrabble words) or "char" (per-character)
         self.genome_mode = genome_mode
         self.codec = self._build_codec(genome_mode)
 
@@ -206,14 +185,12 @@ class EvolutionaryAlgorithm:
         """Construct the genome codec for the requested mode."""
         if mode == "char":
             return CharCodec()
-        if mode == "token":
-            return TokenCodec(self.token_encoding)
-        raise ValueError(f"Unknown genome_mode: {mode!r} (expected 'char' or 'token')")
+        if mode == "word":
+            return WordCodec()
+        raise ValueError(f"Unknown genome_mode: {mode!r} (expected 'char' or 'word')")
 
-    def set_genome_mode(self, mode: str, token_encoding: Optional[str] = None) -> None:
+    def set_genome_mode(self, mode: str) -> None:
         """Switch the genome representation (rebuilds the codec)."""
-        if token_encoding:
-            self.token_encoding = token_encoding
         self.codec = self._build_codec(mode)
         self.genome_mode = mode
         logger.info(f"Genome mode set to '{mode}'")

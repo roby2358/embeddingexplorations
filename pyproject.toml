@@ -15,7 +15,6 @@ dependencies = [
     "numpy>=1.21.0",
     "faiss-cpu>=1.7.0",
     "sentence-transformers>=2.2.0",
-    "tiktoken>=0.5.0",
     # Dev/test tooling — included as core deps since this is a dev-only project
     "pytest==7.4.3",
     "pytest-asyncio==0.21.1",

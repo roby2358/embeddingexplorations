@@ -456,8 +456,7 @@ class VecBookIndex:
                     "cosine_similarity": f"{similarity_score:.6f}",
                     "index": i
                 })
-            
-            logger.info(f"Compared {len(test_strings)} test strings against stored barycenter")
+
             return results
             
         except Exception as e:
