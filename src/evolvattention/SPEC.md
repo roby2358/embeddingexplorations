@@ -67,9 +67,17 @@ The HTTP API MUST provide JSON/HTTP endpoints for batch string processing, embed
     "target_strings": ["target1", "target2"],
     "population_size": 50,
     "step_generations": 10,
-    "output_length": 100
+    "output_length": 100,
+    "genome_mode": "char",
+    "token_encoding": "cl100k_base"
   }
   ```
+  - `genome_mode` (optional, default `"char"`): unit of evolution.
+    - `"char"` — genome is a sequence of characters; `output_length` counts characters.
+    - `"token"` — genome is a sequence of GPT/BPE token ids (real word-pieces);
+      `output_length` counts tokens (≈ words), so use a smaller value.
+  - `token_encoding` (optional, default `"cl100k_base"`): `tiktoken` encoding used
+    when `genome_mode="token"`. MUST return 400 if the encoding cannot be loaded.
 - **Response**:
   ```json
   {
@@ -78,6 +86,7 @@ The HTTP API MUST provide JSON/HTTP endpoints for batch string processing, embed
       "population_size": 50,
       "step_generations": 10,
       "output_length": 100,
+      "genome_mode": "char",
       "population": [
         {"string": "initial string 1", "similarity": 0.85},
         {"string": "initial string 2", "similarity": 0.72},
@@ -88,6 +97,7 @@ The HTTP API MUST provide JSON/HTTP endpoints for batch string processing, embed
   ```
 - **Requirements**:
   - **MUST** Generate initial population from target strings with random variations
+- **MUST** Return 400 if `genome_mode` is not `"char"` or `"token"`
 - **MUST** Store initial population in server memory with generation count (0)
 - **MUST** Store target strings and barycenter in server memory
 - **MUST** Calculate cosine similarities for all population members
