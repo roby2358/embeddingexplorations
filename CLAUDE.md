@@ -11,8 +11,9 @@ EvolvAttention is the single project in this `embeddingexplorations` repo: a Fas
 Dependencies are managed with `uv`. Run everything through `uv run` (this resolves the `pythonpath = ["src"]` setting so imports like `from evolvattention...` work).
 
 ```bash
-uv sync --extra dev                               # install deps (incl. dev tools)
+uv sync                                           # install all deps (incl. test/lint tools)
 
+uv run web                                        # run server (localhost:8042); alias for the line below
 uv run python -m src.evolvattention.server        # run server (localhost:8042)
 uv run uvicorn src.evolvattention.server:app --port 8042   # alt: run with reload, etc.
 

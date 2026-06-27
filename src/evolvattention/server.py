@@ -51,7 +51,7 @@ class EvolutionInitRequest(BaseModel):
     population_size: int = 50
     step_generations: int = 10
     output_length: int = 100
-    genome_mode: str = "char"  # "char" (per-character) or "token" (GPT/BPE tokens)
+    genome_mode: str = "token"  # "token" (GPT/BPE tokens, default) or "char" (per-character)
     token_encoding: str = "cl100k_base"  # tiktoken encoding when genome_mode="token"
 
 
@@ -211,8 +211,8 @@ async def evolution_initialize(req: EvolutionInitRequest):  # noqa: D401
         # Update population size from request
         ea.update_population_size(req.population_size)
 
-        # Select genome representation (char vs. GPT tokens)
-        mode = (req.genome_mode or "char").lower()
+        # Select genome representation (GPT tokens by default; char still supported)
+        mode = (req.genome_mode or "token").lower()
         if mode not in ("char", "token"):
             raise HTTPException(
                 status_code=400, detail="genome_mode must be 'char' or 'token'"

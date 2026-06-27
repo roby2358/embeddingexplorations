@@ -13,10 +13,10 @@ A comprehensive system for evolutionary attention analysis using embedding-based
 **Quick Start**:
 ```bash
 # Install dependencies
-uv sync --extra dev
+uv sync
 
-# Run the server
-uv run python -m src.evolvattention.server
+# Run the server (shortcut)
+uv run web
 ```
 
 **Features**:
@@ -38,7 +38,7 @@ pip install uv
 
 2. Install dependencies:
 ```bash
-uv sync --extra dev
+uv sync
 ```
 
 ### Code Quality

@@ -206,7 +206,8 @@ class EvolvAttentionUI {
                 target_strings: targetStrings,
                 population_size: populationSize,
                 step_generations: stepGenerations,
-                output_length: outputLength
+                output_length: outputLength,
+                genome_mode: 'token'
             });
 
             this.evolutionActive = true;

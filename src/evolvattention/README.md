@@ -22,11 +22,14 @@ pip install uv
 
 2. Install dependencies from the root directory:
 ```bash
-uv sync --extra dev
+uv sync
 ```
 
 3. Run the server:
 ```bash
+# Option 0: Shortcut (console script)
+uv run web
+
 # Option 1: Run as module from root
 uv run python -m src.evolvattention.server
 
