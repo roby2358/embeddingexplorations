@@ -388,6 +388,17 @@ class TestWordGenome:
         mutated = word_ea._mutate(p1)
         assert all(isinstance(g, str) for g in mutated.genome)
 
+    def test_mutation_preserves_genome_length(self, word_ea):
+        # Substitution and repeat are the only mutations and both are
+        # length-preserving, so the genome length never drifts.
+        word_ea.mutation_rate = 1.0  # force every mutation operator to fire
+        ind = Individual(
+            text="alpha beta gamma delta",
+            genome=["alpha", "beta", "gamma", "delta"],
+        )
+        for _ in range(200):
+            assert len(word_ea._mutate(ind).genome) == len(ind.genome)
+
     def test_set_genome_mode_switches_codec(self, word_ea):
         word_ea.set_genome_mode("char")
         assert word_ea.codec.name == "char"
@@ -395,20 +406,9 @@ class TestWordGenome:
         word_ea.set_genome_mode("word")
         assert word_ea.codec.name == "word"
 
-    def test_redundancy_factor_penalizes_repeats(self, word_ea):
-        assert word_ea.codec.redundancy_factor("alpha beta gamma") == 1.0
-        assert word_ea.codec.redundancy_factor("mine mine mine") == pytest.approx(1 / 3)
-        assert word_ea.codec.redundancy_factor("") == 1.0
-
-    def test_evaluate_fitness_discounts_repetition(self, word_ea):
-        # mock returns cosine 0.5; a 3-way repeat keeps only 1/3 of it.
+    def test_evaluate_fitness_uses_raw_cosine(self, word_ea):
+        # mock returns cosine 0.5; repeats are not penalized.
         repeated = Individual(text="mine mine mine", genome=["mine", "mine", "mine"])
         unique = Individual(text="alpha beta gamma", genome=["alpha", "beta", "gamma"])
-        assert word_ea._evaluate_fitness(repeated) == pytest.approx(0.5 / 3)
-        assert word_ea._evaluate_fitness(unique) == pytest.approx(0.5)
-
-    def test_repetition_discount_can_be_disabled(self, word_ea):
-        word_ea.discount_repetition = False
-        repeated = Individual(text="mine mine mine", genome=["mine", "mine", "mine"])
-        # Raw cosine, no penalty for repeats.
         assert word_ea._evaluate_fitness(repeated) == pytest.approx(0.5)
+        assert word_ea._evaluate_fitness(unique) == pytest.approx(0.5)

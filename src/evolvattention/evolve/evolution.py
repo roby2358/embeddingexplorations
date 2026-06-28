@@ -46,10 +46,6 @@ class CharCodec:
     def to_text(self, genome: List[str]) -> str:
         return "".join(genome)
 
-    def redundancy_factor(self, text: str) -> float:
-        # Character-level repetition is meaningless, so never penalize it.
-        return 1.0
-
 
 class WordCodec:
     """Genome = list of Scrabble words; text = those words joined by spaces.
@@ -85,20 +81,6 @@ class WordCodec:
 
     def to_text(self, genome: List[str]) -> str:
         return " ".join(genome)
-
-    def redundancy_factor(self, text: str) -> float:
-        """Fraction of distinct words, in [0, 1].
-
-        Mean-pooled embeddings reward repeating a high-value word (it drags the
-        average further in that word's direction) even though the repeat adds no
-        new meaning. Scaling fitness by unique/total words makes repetition a
-        price the GA pays only when the embedding gain outweighs it — so an
-        earned refrain survives, but `mine mine mine` spam does not.
-        """
-        words = text.split()
-        if not words:
-            return 1.0
-        return len(set(words)) / len(words)
 
 
 @dataclass
@@ -170,7 +152,6 @@ class EvolutionaryAlgorithm:
         crossover_rate: float = 0.8,
         mutation_rate: float = 0.1,
         genome_mode: str = "word",
-        discount_repetition: bool = True,
     ):
         self.vecbook_index = vecbook_index
         self.population_size = population_size
@@ -182,10 +163,6 @@ class EvolutionaryAlgorithm:
         # Genome representation: "word" (Scrabble words) or "char" (per-character)
         self.genome_mode = genome_mode
         self.codec = self._build_codec(genome_mode)
-
-        # When True, scale fitness by the codec's redundancy factor (penalize
-        # repeated words); when False, use the raw cosine similarity.
-        self.discount_repetition = discount_repetition
 
         # Evolution state
         self.population: Optional[Population] = None
@@ -337,9 +314,6 @@ class EvolutionaryAlgorithm:
             if comparison_results:
                 fitness = float(comparison_results[0]["cosine_similarity"])
                 fitness = max(0.0, min(1.0, fitness))  # Ensure between 0 and 1
-                # Discount repetition (codec-specific; no-op for char mode).
-                if self.discount_repetition:
-                    fitness *= self.codec.redundancy_factor(individual.text)
                 return fitness
             else:
                 return 0.0
@@ -376,6 +350,9 @@ class EvolutionaryAlgorithm:
 
         For each position, take the unit from one parent or the other with 50/50
         chance. Works identically whether a unit is a character or a token id.
+        Mutation is length-preserving, so same-generation genomes share a length
+        and positions stay aligned; the max-length handling below only matters
+        for char-mode individuals built directly from differing-length text.
         """
         g1, g2 = parent1.genome, parent2.genome
         max_len = max(len(g1), len(g2))
@@ -392,23 +369,33 @@ class EvolutionaryAlgorithm:
         return self._new_individual(offspring_genome)
 
     def _mutate(self, individual: Individual) -> Individual:
-        """Apply substitution / insertion / deletion to genome units."""
+        """Apply substitution / repeat to genome units.
+
+        Both operators are length-preserving, so genomes keep a fixed length:
+        positional crossover stays aligned (no insert/delete drift), and the
+        only source of repetition is the explicit repeat mutation below — which
+        is a feature here, since repeating a high-value word pulls the
+        mean-pooled embedding further toward the target.
+        """
         genome = list(individual.genome)
 
-        # Substitution
+        # Substitution: replace one unit with a fresh random unit.
         if random.random() < self.mutation_rate and genome:
             pos = random.randrange(len(genome))
             genome[pos] = self.codec.random_unit()
 
-        # Insertion
-        if random.random() < self.mutation_rate:
-            pos = random.randint(0, len(genome))
-            genome.insert(pos, self.codec.random_unit())
-
-        # Deletion
+        # Repeat: copy a unit over an adjacent neighbour, duplicating it in place
+        # without changing the genome length (e.g. "cap dog flower" becomes
+        # "dog dog flower" or "cap dog dog").
         if random.random() < self.mutation_rate and len(genome) > 1:
             pos = random.randrange(len(genome))
-            del genome[pos]
+            if pos == 0:
+                neighbour = 1
+            elif pos == len(genome) - 1:
+                neighbour = pos - 1
+            else:
+                neighbour = pos + 1 if random.random() < 0.5 else pos - 1
+            genome[neighbour] = genome[pos]
 
         return self._new_individual(genome)
 

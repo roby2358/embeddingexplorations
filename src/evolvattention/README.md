@@ -90,7 +90,7 @@ Core evolutionary algorithm implementation with:
 - Tournament size: 3 (selection pressure)
 - Crossover rate: 0.8
 - Mutation rate: 0.1
-- Character-level mutations (substitution, insertion, deletion)
+- Length-preserving mutations: substitution and repeat (duplicate a word over an adjacent neighbour)
 
 ### Vector Processing (`vecx/`)
 

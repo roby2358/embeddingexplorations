@@ -69,7 +69,6 @@ The HTTP API MUST provide JSON/HTTP endpoints for batch string processing, embed
     "step_generations": 10,
     "output_length": 14,
     "genome_mode": "word",
-    "repetition_discount": true,
     "target_mode": "barycenter"
   }
   ```
@@ -77,11 +76,6 @@ The HTTP API MUST provide JSON/HTTP endpoints for batch string processing, embed
     - `"word"` — genome is a sequence of Scrabble-dictionary words joined by
       spaces; `output_length` counts words, so use a smaller value.
     - `"char"` — genome is a sequence of characters; `output_length` counts characters.
-  - `repetition_discount` (optional, default `true`): when `true`, word-mode
-    fitness is the cosine similarity to the barycenter scaled by the fraction of
-    distinct words (`unique/total`), so repeated words are discounted unless the
-    embedding gain outweighs the penalty. When `false`, the raw cosine
-    similarity is used (repeated words are free). No effect in `"char"` mode.
   - `target_mode` (optional, default `"barycenter"`): how multiple targets are
     aggregated when scoring.
     - `"barycenter"` — cosine similarity to the mean of the (normalized) target
@@ -477,9 +471,13 @@ def attention_crossover(parent1: Individual, parent2: Individual,
 def mutate_individual(individual: Individual, mutation_rate: float) -> Individual
 ```
 
-**MUST Implement Mutations**:
-- **Character-level**: Random character substitution
-- (future) **Word-level**: Word insertion, deletion, replacement
+**MUST Implement Mutations** (both length-preserving, so genomes keep a fixed
+length and positional crossover stays aligned):
+- **Substitution**: replace one unit with a fresh random unit.
+- **Repeat**: copy a unit over an adjacent neighbour, duplicating it in place
+  (e.g. `cap dog flower` → `dog dog flower` or `cap dog dog`). Repetition is
+  intentional — repeating a high-value word pulls the mean-pooled embedding
+  further toward the target.
 - (future) **Phrase-level**: Phrase reordering, replacement
 - (future) **Semantic-level**: Synonym replacement, paraphrasing
 

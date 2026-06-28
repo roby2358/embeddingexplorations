@@ -201,7 +201,6 @@ class EvolvAttentionUI {
         const populationSize = parseInt(document.getElementById('population-size').value);
         const stepGenerations = parseInt(document.getElementById('step-generations').value);
         const outputLength = parseInt(document.getElementById('output-length').value);
-        const repetitionDiscount = document.getElementById('repetition-discount').checked;
         const maxTarget = document.getElementById('max-target').checked;
 
         const button = document.getElementById('initialize-evolution');
@@ -214,7 +213,6 @@ class EvolvAttentionUI {
                 step_generations: stepGenerations,
                 output_length: outputLength,
                 genome_mode: 'word',
-                repetition_discount: repetitionDiscount,
                 target_mode: maxTarget ? 'max' : 'barycenter'
             });
 
