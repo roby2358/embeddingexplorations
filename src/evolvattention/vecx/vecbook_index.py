@@ -42,6 +42,9 @@ class VecBookIndex:
         self.target_strings = []
         self.target_embeddings = None
         self.target_barycenter = None
+        # How targets are aggregated when scoring: "barycenter" (cosine to the
+        # mean of the targets) or "max" (cosine to the nearest individual target).
+        self.target_mode = "barycenter"
         
         self.stats = {
             "total_records": 0,
@@ -405,6 +408,15 @@ class VecBookIndex:
                 "message": f"Failed to set target strings: {str(e)}"
             }
     
+    def set_target_mode(self, mode: str) -> None:
+        """Set how targets are aggregated when scoring ('barycenter' or 'max')."""
+        if mode not in ("barycenter", "max"):
+            raise ValueError(
+                f"Unknown target_mode: {mode!r} (expected 'barycenter' or 'max')"
+            )
+        self.target_mode = mode
+        logger.info(f"Target mode set to '{mode}'")
+
     def get_target_info(self) -> Dict[str, Any]:
         """Get information about currently stored targets"""
         if not self.target_strings:
@@ -455,9 +467,16 @@ class VecBookIndex:
             
             # Normalize test embeddings
             faiss.normalize_L2(test_embeddings)
-            
-            # Calculate cosine similarities between test embeddings and barycenter
-            similarities = np.dot(test_embeddings, self.target_barycenter)
+
+            # Aggregate against the targets per the configured mode.
+            if self.target_mode == "max" and self.target_embeddings is not None:
+                # Nearest-target: cosine to each target, keep the best per string.
+                # target_embeddings are already L2-normalized in set_target_strings.
+                per_target = np.dot(test_embeddings, self.target_embeddings.T)
+                similarities = per_target.max(axis=1)
+            else:
+                # Barycenter: cosine to the mean of the (normalized) targets.
+                similarities = np.dot(test_embeddings, self.target_barycenter)
             
             # Build results
             results = []

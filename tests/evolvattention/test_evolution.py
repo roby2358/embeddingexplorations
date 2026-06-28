@@ -394,3 +394,21 @@ class TestWordGenome:
         assert word_ea._random_individual().genome  # char units
         word_ea.set_genome_mode("word")
         assert word_ea.codec.name == "word"
+
+    def test_redundancy_factor_penalizes_repeats(self, word_ea):
+        assert word_ea.codec.redundancy_factor("alpha beta gamma") == 1.0
+        assert word_ea.codec.redundancy_factor("mine mine mine") == pytest.approx(1 / 3)
+        assert word_ea.codec.redundancy_factor("") == 1.0
+
+    def test_evaluate_fitness_discounts_repetition(self, word_ea):
+        # mock returns cosine 0.5; a 3-way repeat keeps only 1/3 of it.
+        repeated = Individual(text="mine mine mine", genome=["mine", "mine", "mine"])
+        unique = Individual(text="alpha beta gamma", genome=["alpha", "beta", "gamma"])
+        assert word_ea._evaluate_fitness(repeated) == pytest.approx(0.5 / 3)
+        assert word_ea._evaluate_fitness(unique) == pytest.approx(0.5)
+
+    def test_repetition_discount_can_be_disabled(self, word_ea):
+        word_ea.discount_repetition = False
+        repeated = Individual(text="mine mine mine", genome=["mine", "mine", "mine"])
+        # Raw cosine, no penalty for repeats.
+        assert word_ea._evaluate_fitness(repeated) == pytest.approx(0.5)

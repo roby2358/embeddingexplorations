@@ -68,13 +68,27 @@ The HTTP API MUST provide JSON/HTTP endpoints for batch string processing, embed
     "population_size": 50,
     "step_generations": 10,
     "output_length": 14,
-    "genome_mode": "word"
+    "genome_mode": "word",
+    "repetition_discount": true,
+    "target_mode": "barycenter"
   }
   ```
   - `genome_mode` (optional, default `"word"`): unit of evolution.
     - `"word"` — genome is a sequence of Scrabble-dictionary words joined by
       spaces; `output_length` counts words, so use a smaller value.
     - `"char"` — genome is a sequence of characters; `output_length` counts characters.
+  - `repetition_discount` (optional, default `true`): when `true`, word-mode
+    fitness is the cosine similarity to the barycenter scaled by the fraction of
+    distinct words (`unique/total`), so repeated words are discounted unless the
+    embedding gain outweighs the penalty. When `false`, the raw cosine
+    similarity is used (repeated words are free). No effect in `"char"` mode.
+  - `target_mode` (optional, default `"barycenter"`): how multiple targets are
+    aggregated when scoring.
+    - `"barycenter"` — cosine similarity to the mean of the (normalized) target
+      embeddings; with distinct targets this aims at their blended midpoint.
+    - `"max"` — cosine similarity to the *nearest* individual target (max over
+      targets), preserving distinct targets instead of blending them.
+    - MUST return 400 if not `"barycenter"` or `"max"`.
 - **Response**:
   ```json
   {

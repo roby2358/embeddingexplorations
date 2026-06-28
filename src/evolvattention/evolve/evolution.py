@@ -46,6 +46,10 @@ class CharCodec:
     def to_text(self, genome: List[str]) -> str:
         return "".join(genome)
 
+    def redundancy_factor(self, text: str) -> float:
+        # Character-level repetition is meaningless, so never penalize it.
+        return 1.0
+
 
 class WordCodec:
     """Genome = list of Scrabble words; text = those words joined by spaces.
@@ -81,6 +85,20 @@ class WordCodec:
 
     def to_text(self, genome: List[str]) -> str:
         return " ".join(genome)
+
+    def redundancy_factor(self, text: str) -> float:
+        """Fraction of distinct words, in [0, 1].
+
+        Mean-pooled embeddings reward repeating a high-value word (it drags the
+        average further in that word's direction) even though the repeat adds no
+        new meaning. Scaling fitness by unique/total words makes repetition a
+        price the GA pays only when the embedding gain outweighs it — so an
+        earned refrain survives, but `mine mine mine` spam does not.
+        """
+        words = text.split()
+        if not words:
+            return 1.0
+        return len(set(words)) / len(words)
 
 
 @dataclass
@@ -152,6 +170,7 @@ class EvolutionaryAlgorithm:
         crossover_rate: float = 0.8,
         mutation_rate: float = 0.1,
         genome_mode: str = "word",
+        discount_repetition: bool = True,
     ):
         self.vecbook_index = vecbook_index
         self.population_size = population_size
@@ -163,6 +182,10 @@ class EvolutionaryAlgorithm:
         # Genome representation: "word" (Scrabble words) or "char" (per-character)
         self.genome_mode = genome_mode
         self.codec = self._build_codec(genome_mode)
+
+        # When True, scale fitness by the codec's redundancy factor (penalize
+        # repeated words); when False, use the raw cosine similarity.
+        self.discount_repetition = discount_repetition
 
         # Evolution state
         self.population: Optional[Population] = None
@@ -313,7 +336,11 @@ class EvolutionaryAlgorithm:
 
             if comparison_results:
                 fitness = float(comparison_results[0]["cosine_similarity"])
-                return max(0.0, min(1.0, fitness))  # Ensure between 0 and 1
+                fitness = max(0.0, min(1.0, fitness))  # Ensure between 0 and 1
+                # Discount repetition (codec-specific; no-op for char mode).
+                if self.discount_repetition:
+                    fitness *= self.codec.redundancy_factor(individual.text)
+                return fitness
             else:
                 return 0.0
 

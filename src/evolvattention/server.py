@@ -52,6 +52,8 @@ class EvolutionInitRequest(BaseModel):
     step_generations: int = 10
     output_length: int = 100
     genome_mode: str = "word"  # "word" (Scrabble words, default) or "char" (per-character)
+    repetition_discount: bool = True  # scale word-mode fitness by unique/total words
+    target_mode: str = "barycenter"  # "barycenter" (mean) or "max" (nearest target)
 
 
 class AttentionAnalyzeRequest(BaseModel):
@@ -223,6 +225,17 @@ async def evolution_initialize(req: EvolutionInitRequest):  # noqa: D401
                 status_code=400,
                 detail=f"Could not initialize '{mode}' genome: {e}",
             )
+        ea.discount_repetition = req.repetition_discount
+
+        # Select how targets are aggregated when scoring (mean vs. nearest)
+        target_mode = (req.target_mode or "barycenter").lower()
+        try:
+            ea.vecbook_index.set_target_mode(target_mode)
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail="target_mode must be 'barycenter' or 'max'",
+            )
 
         # Initialize population using evolutionary algorithm
         init_result = ea.initialize_population(req.target_strings, req.output_length)
@@ -248,6 +261,8 @@ async def evolution_initialize(req: EvolutionInitRequest):  # noqa: D401
                 "step_generations": req.step_generations,
                 "output_length": req.output_length,
                 "genome_mode": mode,
+                "repetition_discount": ea.discount_repetition,
+                "target_mode": ea.vecbook_index.target_mode,
                 "population": population_data,
             },
         }
