@@ -1,0 +1,13 @@
+Priority:   60
+Status: ToDo
+ID: movetarget-spjn
+Created: 2026-06-28T00:26:19Z
+Updated: 2026-06-28T00:26:19Z
+EvolvAttention word-GA: add a "moving target" target_mode. Instead of collapsing the target strings into one barycenter (which discards their ordering), walk the ordered target list as generations advance so the population morphs target_0 -> target_1 -> ... — a poem that travels through an arc. Sits alongside the existing target_mode values "barycenter" and "max" (set on VecBookIndex via set_target_mode, exposed through /evolution/initialize and a UI control). Sketch: index the active target by generation (e.g. advance every N gens, or interpolate/sliding-blend between consecutive targets), and re-evaluate fitness against the current target. Restores ordering among targets that the barycenter flattens. User called this "really compelling" but wants to work up to it after barycenter/max/repetition-discount land.
+----
+Priority:   40
+Status: ToDo
+ID: progcentroid-i4m9
+Created: 2026-06-28T00:26:25Z
+Updated: 2026-06-28T00:26:25Z
+EvolvAttention word-GA: explore a "progressive centroid" target_mode (meaning TBD — define it first). Working idea: a centroid that evolves over the run rather than being fixed. Candidate interpretations to pin down: (a) accumulating mean — start the centroid at a single target and progressively blend in more targets each generation until it reaches the full barycenter; (b) progressively shifting/re-weighting the target mix over generations; (c) progressively tightening (annealing) toward the centroid. Related to but distinct from the "moving target" task (which steps through discrete ordered targets); progressive centroid stays a single blended point but changes how it's blended over time. First deliverable: write down the concrete definition + fitness formula, then implement behind target_mode alongside barycenter/max/moving.
