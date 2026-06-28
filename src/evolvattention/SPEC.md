@@ -428,9 +428,10 @@ class Individual:
 - MUST return value between 0.0 and 1.0
 - MUST handle embedding generation errors
 
-`select_parents(population: Population, tournament_size: int = 3) -> Tuple[Individual, Individual]`
-- MUST implement tournament selection
-- MUST favor higher fitness individuals
+`select_parents(population: Population, tournament_size: int = 1) -> Tuple[Individual, Individual]`
+- MUST implement tournament selection (each parent = fittest of `tournament_size`
+  random draws; `tournament_size=1` degenerates to a uniform random draw, deferring
+  all selection pressure to elitism and the traveller cull)
 - MUST return two distinct parents
 - SHOULD use configurable tournament size
 
@@ -520,12 +521,16 @@ def analyze_components(text: str, target_barycenter: np.ndarray) -> List[Compone
 
 #### Evolution Loop
 1. **MUST** Evaluate fitness for all individuals
-2. **MUST** Select parents using tournament selection
+2. **MUST** Select parents using tournament selection (both parents drawn from the
+   current population — no random genome is blended into crossover)
 3. **MUST** Perform attention-enhanced crossover
 4. **MUST** Apply mutation operations
 5. **MUST** Evaluate offspring fitness
 6. **MUST** Replace population using elitism
-7. **MUST** Update generation statistics
+7. **MUST** Replace the lowest-fitness 25% ("travellers") with fresh random genomes,
+   each scored on its own merit so a newcomer must survive a generation before its
+   genes can mix into offspring
+8. **MUST** Update generation statistics
 
 #### Termination Conditions
 - **MUST** Support maximum generation limit
@@ -538,7 +543,7 @@ def analyze_components(text: str, target_barycenter: np.ndarray) -> List[Compone
 **Population Parameters**:
 - `population_size`: Number of individuals (MUST be >= 10)
 - `elite_size`: Number of best individuals to preserve (MUST be >= 1)
-- `tournament_size`: Tournament selection size (MUST be >= 2)
+- `tournament_size`: Tournament selection size (MUST be >= 1; 1 = uniform random draw)
 
 **Evolution Parameters**:
 - `crossover_rate`: Probability of crossover (MUST be 0.0-1.0)

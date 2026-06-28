@@ -5,6 +5,28 @@ Created: 2026-06-28T00:26:19Z
 Updated: 2026-06-28T00:26:19Z
 EvolvAttention word-GA: add a "moving target" target_mode. Instead of collapsing the target strings into one barycenter (which discards their ordering), walk the ordered target list as generations advance so the population morphs target_0 -> target_1 -> ... — a poem that travels through an arc. Sits alongside the existing target_mode values "barycenter" and "max" (set on VecBookIndex via set_target_mode, exposed through /evolution/initialize and a UI control). Sketch: index the active target by generation (e.g. advance every N gens, or interpolate/sliding-blend between consecutive targets), and re-evaluate fitness against the current target. Restores ordering among targets that the barycenter flattens. User called this "really compelling" but wants to work up to it after barycenter/max/repetition-discount land.
 ----
+Priority:   55
+Status: ToDo
+ID: metrics-bu6q
+Created: 2026-06-28T06:35:18Z
+Updated: 2026-06-28T06:35:18Z
+Track per-generation evolution metrics for convergence analysis (K=1 vs K=3 etc.).
+
+Record a small set of metrics each generation and expose their history so we can read convergence *curves* instead of eyeballing top-10 snapshots:
+- max fitness (best individual)
+- average fitness (population mean)
+- diversity
+
+Diversity metric: start with lexical diversity = unique words / total words across the whole population's genomes (ratio in (0,1]; ~1 = all distinct, low = converged/repetitive). Cheap to compute from genome unit lists. Consider alternatives later (count of distinct genomes, mean pairwise word-overlap / Jaccard distance between genomes) if word-ratio is too coarse.
+
+Implementation sketch:
+- evolution.py already keeps fitness_history (best per gen). Add parallel histories (e.g. avg_fitness_history, diversity_history) appended in evolve_generation alongside the existing best-fitness append, and seed them in initialize_population.
+- Surface the histories (and/or latest values) via GET /evolution/status and/or the /evolution/step response so the UI can plot them.
+- Update SPEC.md (response shapes) + README; add a fast unit test for the diversity computation (e.g. all-same-word genome -> low; all-distinct -> 1.0).
+- Optional follow-up: chart the curves in the UI.
+
+Motivation: comparing tournament_size=1 vs 3 needs the diversity-decay and best-fitness-climb trajectories on the SAME target across seeds, not single-run snapshots.
+----
 Priority:   40
 Status: ToDo
 ID: progcentroid-i4m9

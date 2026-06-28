@@ -45,7 +45,7 @@ Three layers, wired together lazily at request time:
 
 ## Source of truth
 
-`src/evolvattention/SPEC.md` is the authoritative API contract (request/response shapes, MUST requirements, error formats `{"error": ..., "status": "error"}`). When changing endpoints, update SPEC.md alongside the code. `src/evolvattention/README.md` documents GA defaults (population 50, elite 5, tournament 3, crossover 0.8, mutation 0.1).
+`src/evolvattention/SPEC.md` is the authoritative API contract (request/response shapes, MUST requirements, error formats `{"error": ..., "status": "error"}`). When changing endpoints, update SPEC.md alongside the code. `src/evolvattention/README.md` documents GA defaults (population 50, elite 5, tournament 1, crossover 0.8, mutation 0.1).
 
 ## Notes
 

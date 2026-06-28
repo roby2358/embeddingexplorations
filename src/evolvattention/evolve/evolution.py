@@ -19,6 +19,11 @@ POPULATION_ALPHABET = " abcdefghijklmnopqrstuvwxyz"
 
 logger = logging.getLogger(__name__)
 
+# Fraction of the population replaced each generation by fresh random "traveller"
+# genomes. They are scored on their own merit and must survive a generation before
+# their genes can mix into offspring, rather than being blended into crossover.
+TRAVELLER_FRACTION = 0.25
+
 # Bundled Scrabble word list (one lowercase word per line), shipped next to this
 # module. Loaded once and shared across all WordCodec instances.
 WORDS_PATH = Path(__file__).with_name("words.txt")
@@ -148,7 +153,7 @@ class EvolutionaryAlgorithm:
         vecbook_index,
         population_size: int = 50,
         elite_size: int = 5,
-        tournament_size: int = 3,
+        tournament_size: int = 1,
         crossover_rate: float = 0.8,
         mutation_rate: float = 0.1,
         genome_mode: str = "word",
@@ -323,25 +328,32 @@ class EvolutionaryAlgorithm:
             return 0.0
 
     def _select_parents(self) -> Tuple[Individual, Individual]:
-        """Select two parents using tournament selection"""
+        """Select two distinct parents, each by tournament selection.
+
+        Each parent is the fittest of ``tournament_size`` randomly sampled members.
+        The default ``tournament_size=1`` makes this a plain uniform random draw —
+        every member gets an equal shot at breeding, with no fitness filtering at
+        selection time. Selection pressure then comes only from elitism (the top
+        ``elite_size`` are carried over) and the traveller cull (the weakest are
+        replaced each generation); larger tournaments add greedier parent pressure.
+
+        Both parents come from the current population — no fresh random genome is
+        blended in here. Random "travellers" instead enter as whole genomes each
+        generation (see ``evolve_generation``), so a newcomer is scored on its own
+        merit and must survive a generation before its genes mix into offspring.
+        """
         # Select first parent
         tournament1 = random.sample(self.population.individuals, self.tournament_size)
         parent1 = max(tournament1, key=lambda x: x.fitness)
 
-        # 25% chance that second parent is a fresh random individual
-        if random.random() < 0.25:
-            parent2 = self._random_individual()
+        # Select second parent using tournament selection (different from first)
+        remaining = [ind for ind in self.population.individuals if ind != parent1]
+        if len(remaining) >= self.tournament_size:
+            tournament2 = random.sample(remaining, self.tournament_size)
         else:
-            # Select second parent using tournament selection (different from first)
-            remaining = [ind for ind in self.population.individuals if ind != parent1]
-            if len(remaining) >= self.tournament_size:
-                tournament2 = random.sample(remaining, self.tournament_size)
-            else:
-                tournament2 = remaining
+            tournament2 = remaining
 
-            parent2 = (
-                max(tournament2, key=lambda x: x.fitness) if tournament2 else parent1
-            )
+        parent2 = max(tournament2, key=lambda x: x.fitness) if tournament2 else parent1
 
         return parent1, parent2
 
@@ -468,8 +480,42 @@ class EvolutionaryAlgorithm:
                     new_individuals.append(random_individual)
                     existing_strings.add(random_individual.text)
 
+            # Trim to the target population size before injecting travellers.
+            new_individuals = new_individuals[: self.population_size]
+
+            # Travellers: replace the lowest-fitness fraction of the population with
+            # fresh random genomes, each scored on its own merit. Unlike blending a
+            # random parent into crossover (where its genes are diluted 50/50 and
+            # almost always lose), a whole traveller genome stands in its own right
+            # and competes for selection next generation — who knows, it might win.
+            traveller_count = int(self.population_size * TRAVELLER_FRACTION)
+            if traveller_count > 0:
+                new_individuals.sort(key=lambda ind: ind.fitness, reverse=True)
+                survivors = new_individuals[: self.population_size - traveller_count]
+                existing_strings = set(ind.text for ind in survivors)
+
+                travellers: List[Individual] = []
+                attempts = 0
+                max_attempts = traveller_count * 10
+                while len(travellers) < traveller_count and attempts < max_attempts:
+                    attempts += 1
+                    traveller = self._random_individual()
+                    if traveller.text in existing_strings:
+                        continue
+                    traveller.fitness = self._evaluate_fitness(traveller)
+                    travellers.append(traveller)
+                    existing_strings.add(traveller.text)
+
+                # If uniqueness ran dry, top up without the uniqueness constraint.
+                while len(travellers) < traveller_count:
+                    traveller = self._random_individual()
+                    traveller.fitness = self._evaluate_fitness(traveller)
+                    travellers.append(traveller)
+
+                new_individuals = survivors + travellers
+
             # Update population
-            self.population.individuals = new_individuals[: self.population_size]
+            self.population.individuals = new_individuals
             self.population.generation += 1
             self.generation = self.population.generation
 

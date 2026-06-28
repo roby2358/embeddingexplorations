@@ -87,10 +87,11 @@ Core evolutionary algorithm implementation with:
 **Key Features**:
 - Population size: 50 (configurable)
 - Elite size: 5 (best individuals preserved)
-- Tournament size: 3 (selection pressure)
+- Tournament size: 1 (uniform random parent draw; pressure comes from elitism + traveller cull)
 - Crossover rate: 0.8
 - Mutation rate: 0.1
 - Length-preserving mutations: substitution and repeat (duplicate a word over an adjacent neighbour)
+- Travellers: each generation, the lowest-fitness 25% are replaced with fresh random genomes that compete on their own merit (no random genome is blended into crossover)
 
 ### Vector Processing (`vecx/`)
 

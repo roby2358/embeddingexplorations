@@ -261,6 +261,26 @@ class TestEvolutionaryAlgorithm:
         assert "best_fitness" in result
         assert "average_fitness" in result
 
+    def test_evolve_generation_preserves_population_size(self, mock_vecbook_index):
+        """Traveller replacement keeps the population at exactly population_size."""
+        ea = EvolutionaryAlgorithm(mock_vecbook_index, population_size=20)
+        ea.initialize_population(["test1", "test2"], output_length=100)
+
+        for _ in range(5):
+            ea.evolve_generation()
+            assert len(ea.population.individuals) == 20
+
+    def test_select_parents_draws_only_from_population(self, mock_vecbook_index):
+        """Both parents come from the current population (no random injection)."""
+        ea = EvolutionaryAlgorithm(mock_vecbook_index, population_size=20)
+        ea.initialize_population(["test1", "test2"], output_length=100)
+
+        members = set(id(ind) for ind in ea.population.individuals)
+        for _ in range(50):
+            parent1, parent2 = ea._select_parents()
+            assert id(parent1) in members
+            assert id(parent2) in members
+
     def test_get_status_no_population(self, mock_vecbook_index):
         """Test getting status without initialized population"""
         ea = EvolutionaryAlgorithm(mock_vecbook_index)
