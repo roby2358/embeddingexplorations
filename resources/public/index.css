@@ -38,12 +38,47 @@ header p {
     opacity: 0.9;
 }
 
+/* Navigation */
+.nav {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-top: 20px;
+}
+
+.nav-item {
+    color: white;
+    text-decoration: none;
+    font-size: 1.1rem;
+    opacity: 0.7;
+    padding-bottom: 4px;
+    border-bottom: 2px solid transparent;
+    transition: opacity 0.2s ease, border-color 0.2s ease;
+}
+
+.nav-item:hover {
+    opacity: 1;
+}
+
+.nav-item.active {
+    opacity: 1;
+    border-bottom-color: white;
+}
+
 /* Main content */
 main {
+    margin-bottom: 40px;
+}
+
+/* Views */
+.view {
+    display: none;
+}
+
+.view.active {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
     gap: 30px;
-    margin-bottom: 40px;
 }
 
 /* Cards */
@@ -52,12 +87,6 @@ main {
     border-radius: 15px;
     padding: 30px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 40px rgba(0,0,0,0.15);
 }
 
 .card h2 {
@@ -202,28 +231,6 @@ textarea {
     overflow-y: auto;
 }
 
-/* Visualization */
-.visualization-controls {
-    margin-bottom: 20px;
-}
-
-.visualization-area {
-    min-height: 300px;
-    background: #f8f9fa;
-    border: 2px dashed #dee2e6;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #6c757d;
-    font-style: italic;
-}
-
-.visualization-area.has-content {
-    border: 2px solid #28a745;
-    background: white;
-}
-
 /* Similarity bars */
 .similarity-bar {
     display: flex;
@@ -305,7 +312,7 @@ footer {
         font-size: 2rem;
     }
     
-    main {
+    .view.active {
         grid-template-columns: 1fr;
         gap: 20px;
     }
@@ -339,37 +346,4 @@ footer {
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
-}
-
-/* Chart styles */
-.chart-container {
-    width: 100%;
-    height: 300px;
-    position: relative;
-}
-
-.chart-bar {
-    background: linear-gradient(90deg, #3498db, #2ecc71);
-    margin: 2px 0;
-    border-radius: 3px;
-    transition: height 0.3s ease;
-}
-
-/* Heatmap styles */
-.heatmap {
-    display: grid;
-    gap: 2px;
-    padding: 10px;
-}
-
-.heatmap-cell {
-    width: 20px;
-    height: 20px;
-    border-radius: 3px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 10px;
-    color: white;
-    font-weight: bold;
 }

@@ -10,8 +10,25 @@ class EvolvAttentionUI {
         this.attentionData = null;
         this.similarityData = null;
         
+        this.initializeNav();
         this.initializeEventListeners();
         this.checkServerHealth();
+    }
+
+    // Switch between the top-level nav views
+    initializeNav() {
+        const navItems = document.querySelectorAll('.nav-item');
+        navItems.forEach(item => {
+            item.addEventListener('click', (event) => {
+                event.preventDefault();
+                const view = item.dataset.view;
+
+                navItems.forEach(n => n.classList.toggle('active', n === item));
+                document.querySelectorAll('.view').forEach(v => {
+                    v.classList.toggle('active', v.id === `${view}-view`);
+                });
+            });
+        });
     }
 
     // Initialize all event listeners
@@ -42,19 +59,6 @@ class EvolvAttentionUI {
         // Attention analysis
         document.getElementById('analyze-attention').addEventListener('click', () => {
             this.analyzeAttention();
-        });
-
-        // Visualization controls
-        document.getElementById('show-similarity-chart').addEventListener('click', () => {
-            this.showSimilarityChart();
-        });
-
-        document.getElementById('show-evolution-progress').addEventListener('click', () => {
-            this.showEvolutionProgress();
-        });
-
-        document.getElementById('show-attention-heatmap').addEventListener('click', () => {
-            this.showAttentionHeatmap();
         });
     }
 
@@ -339,113 +343,6 @@ class EvolvAttentionUI {
                 resultsDiv.appendChild(componentElement);
             });
         }
-    }
-
-    // Visualization functions
-    showSimilarityChart() {
-        if (!this.similarityData) {
-            this.showStatus('No similarity data available. Calculate similarities first.', 'error');
-            return;
-        }
-
-        const vizArea = document.getElementById('visualization-area');
-        vizArea.innerHTML = '';
-        vizArea.className = 'visualization-area has-content';
-
-        const chartContainer = document.createElement('div');
-        chartContainer.className = 'chart-container';
-
-        this.similarityData.strings.forEach((string, index) => {
-            const similarity = this.similarityData.similarities[index];
-            const height = similarity * 200; // Scale to chart height
-            
-            const bar = document.createElement('div');
-            bar.className = 'chart-bar';
-            bar.style.height = `${height}px`;
-            bar.style.width = `${100 / this.similarityData.strings.length - 2}%`;
-            bar.title = `${string}: ${similarity.toFixed(3)}`;
-            
-            chartContainer.appendChild(bar);
-        });
-
-        vizArea.appendChild(chartContainer);
-    }
-
-    showEvolutionProgress() {
-        if (this.evolutionHistory.length === 0) {
-            this.showStatus('No evolution data available. Initialize evolution first.', 'error');
-            return;
-        }
-
-        const vizArea = document.getElementById('visualization-area');
-        vizArea.innerHTML = '';
-        vizArea.className = 'visualization-area has-content';
-
-        const progressDiv = document.createElement('div');
-        progressDiv.innerHTML = `
-            <h3>Evolution Progress</h3>
-            <p>Total Generations: ${this.currentGeneration}</p>
-            <p>Best Fitness History:</p>
-        `;
-
-        const fitnessHistory = this.evolutionHistory.map(h => h.best_fitness).filter(f => f !== undefined);
-        if (fitnessHistory.length > 0) {
-            const chartContainer = document.createElement('div');
-            chartContainer.className = 'chart-container';
-            chartContainer.style.display = 'flex';
-            chartContainer.style.alignItems = 'flex-end';
-            chartContainer.style.gap = '2px';
-
-            fitnessHistory.forEach((fitness, index) => {
-                const height = fitness * 200;
-                const bar = document.createElement('div');
-                bar.className = 'chart-bar';
-                bar.style.height = `${height}px`;
-                bar.style.flex = '1';
-                bar.title = `Generation ${index * 10}: ${fitness.toFixed(3)}`;
-                chartContainer.appendChild(bar);
-            });
-
-            progressDiv.appendChild(chartContainer);
-        }
-
-        vizArea.appendChild(progressDiv);
-    }
-
-    showAttentionHeatmap() {
-        if (!this.attentionData) {
-            this.showStatus('No attention data available. Analyze attention first.', 'error');
-            return;
-        }
-
-        const vizArea = document.getElementById('visualization-area');
-        vizArea.innerHTML = '';
-        vizArea.className = 'visualization-area has-content';
-
-        const heatmapDiv = document.createElement('div');
-        heatmapDiv.innerHTML = '<h3>Attention Heatmap</h3>';
-        
-        const heatmap = document.createElement('div');
-        heatmap.className = 'heatmap';
-
-        if (this.attentionData.components) {
-            this.attentionData.components.forEach(component => {
-                const score = component.score;
-                const intensity = Math.round(score * 255);
-                const color = `rgb(${intensity}, ${255 - intensity}, 100)`;
-                
-                const cell = document.createElement('div');
-                cell.className = 'heatmap-cell';
-                cell.style.backgroundColor = color;
-                cell.textContent = component.text.charAt(0).toUpperCase();
-                cell.title = `${component.text}: ${score.toFixed(3)}`;
-                
-                heatmap.appendChild(cell);
-            });
-        }
-
-        heatmapDiv.appendChild(heatmap);
-        vizArea.appendChild(heatmapDiv);
     }
 }
 
